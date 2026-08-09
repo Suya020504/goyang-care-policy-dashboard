@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="닿지 않는 돌봄 본선 발표를 위한 별도 발표자 대본과 슬라이드 대조 화면"
+    />
+    <title>발표자 화면 | 닿지 않는 돌봄</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='%230c56e8' d='M8 36C8 17 23 8 44 8c0 19-15 28-36 28Z'/%3E%3Cpath fill='%23058b87' d='M20 56c0-13 10-21 28-24 0 14-10 22-28 24Z'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="presenter.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#presenter-main">발표자 대본으로 바로가기</a>
+
+    <header class="topbar">
+      <div class="brand" aria-label="닿지 않는 돌봄 발표자 화면">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>
+          <strong>닿지 않는 돌봄</strong>
+          <small>본선 발표자 콘솔</small>
+        </span>
+      </div>
+
+      <div class="session-summary" aria-label="발표 구성">
+        <span>1인 발표</span>
+        <span>본 발표 12분</span>
+        <span>전환 1분</span>
+        <span>MVP 2분</span>
+      </div>
+
+      <div class="top-actions">
+        <button class="icon-button" id="fullscreen-button" type="button" title="미리보기 전체화면">
+          <span aria-hidden="true">⛶</span>
+          <span>전체화면</span>
+        </button>
+        <button class="secondary-button" id="open-deck-button" type="button">관객 화면 새 창</button>
+        <button class="primary-button" id="open-mvp-button" type="button">MVP 새 창</button>
+      </div>
+    </header>
+
+    <div class="session-progress" aria-hidden="true">
+      <span id="session-progress-bar"></span>
+    </div>
+
+    <main id="presenter-main" class="presenter-layout">
+      <section class="preview-panel" aria-labelledby="preview-heading">
+        <div class="panel-heading preview-heading-row">
+          <div>
+            <p class="eyebrow">Audience view</p>
+            <h1 id="preview-heading">관객 화면 미리보기</h1>
+          </div>
+          <label class="slide-picker-label" for="slide-picker">
+            슬라이드 이동
+            <select id="slide-picker" aria-label="슬라이드 선택"></select>
+          </label>
+        </div>
+
+        <div class="preview-stage" id="preview-stage">
+          <iframe
+            id="slide-preview"
+            title="현재 관객용 슬라이드"
+            src="../presentation/index.html?slide=1&amp;presenter=1"
+            allowfullscreen
+          ></iframe>
+        </div>
+
+        <div class="preview-footer">
+          <div class="preview-status">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span id="preview-status-text">슬라이드 1과 대본을 대조 중</span>
+          </div>
+          <p><kbd>←</kbd><kbd>→</kbd> 이동 · <kbd>Home</kbd><kbd>End</kbd> 처음/끝 · 입력창에서는 단축키 해제</p>
+        </div>
+
+        <section class="run-of-show" aria-labelledby="run-heading">
+          <div class="run-heading-row">
+            <div>
+              <p class="eyebrow">Run of show</p>
+              <h2 id="run-heading">전체 진행표</h2>
+            </div>
+            <span id="run-total">총 15:00</span>
+          </div>
+          <ol id="run-track" class="run-track" aria-label="발표 전체 진행 순서"></ol>
+        </section>
+      </section>
+
+      <aside class="notes-panel" aria-labelledby="notes-heading">
+        <div class="notes-scroll">
+          <header class="slide-note-heading">
+            <div class="slide-number-row">
+              <span class="slide-number" id="slide-number">SLIDE 01 / 15</span>
+              <span class="segment-badge" id="segment-badge">본 발표</span>
+            </div>
+            <h2 id="notes-heading"></h2>
+            <p class="slide-claim" id="slide-claim"></p>
+          </header>
+
+          <section class="timing-grid" aria-label="발표 시간">
+            <div>
+              <span>이 슬라이드</span>
+              <strong id="slide-duration">0:30</strong>
+            </div>
+            <div>
+              <span>본 발표 누적</span>
+              <strong id="talk-elapsed">0:30</strong>
+            </div>
+            <div>
+              <span>전체 진행</span>
+              <strong id="event-elapsed">0:30</strong>
+            </div>
+            <div>
+              <span>본 발표 남음</span>
+              <strong id="talk-remaining">11:30</strong>
+            </div>
+          </section>
+
+          <article class="note-card script-card">
+            <div class="card-title-row">
+              <h3><span aria-hidden="true">●</span> 말할 내용</h3>
+              <button class="text-button" id="copy-script-button" type="button">현재 대본 복사</button>
+            </div>
+            <div class="script-copy" id="script-copy"></div>
+          </article>
+
+          <section class="note-card evidence-card" aria-labelledby="evidence-heading">
+            <h3 id="evidence-heading"><span aria-hidden="true">◆</span> 핵심 근거</h3>
+            <ul id="evidence-list"></ul>
+          </section>
+
+          <section class="note-card caution-card" aria-labelledby="caution-heading">
+            <h3 id="caution-heading"><span aria-hidden="true">!</span> 과장 방지 문구</h3>
+            <p id="caution-copy"></p>
+          </section>
+
+          <section class="note-card transition-card" aria-labelledby="transition-heading">
+            <h3 id="transition-heading"><span aria-hidden="true">→</span> 다음 화면 전환 큐</h3>
+            <p id="transition-copy"></p>
+          </section>
+
+          <section class="demo-cue" id="demo-cue" aria-labelledby="demo-heading" hidden>
+            <div class="demo-heading-row">
+              <div>
+                <p class="eyebrow">2-minute live demo</p>
+                <h3 id="demo-heading">MVP 시연 큐</h3>
+              </div>
+              <button class="primary-button" id="demo-open-button" type="button">시연 화면 열기</button>
+            </div>
+            <ol id="demo-steps"></ol>
+            <p class="demo-return" id="demo-return"></p>
+          </section>
+        </div>
+
+        <nav class="slide-nav" aria-label="슬라이드 탐색">
+          <button id="previous-button" type="button" class="nav-button nav-previous">
+            <span aria-hidden="true">←</span>
+            <span><small>이전</small><strong id="previous-label">처음입니다</strong></span>
+          </button>
+          <button id="next-button" type="button" class="nav-button nav-next">
+            <span><small>다음</small><strong id="next-label">숫자의 뜻</strong></span>
+            <span aria-hidden="true">→</span>
+          </button>
+        </nav>
+      </aside>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="script-data.js"></script>
+    <script src="presenter.js"></script>
+  </body>
+</html>

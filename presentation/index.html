@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#081c2c">
+  <meta name="description" content="고양시 데이터 기반 돌봄 이동 사각지대 정책 발표자료">
+  <title>닿지 않는 돌봄 | 본선 발표</title>
+  <link rel="stylesheet" href="./presentation.css">
+</head>
+<body>
+  <a class="skip-link" href="#deck-stage">슬라이드로 건너뛰기</a>
+
+  <div id="presentation-viewport">
+    <main id="deck-stage" aria-live="polite" aria-label="닿지 않는 돌봄 발표자료">
+      <section class="slide slide-title is-active" data-slide="1" aria-label="1 / 15">
+        <div class="title-map" id="title-map" aria-hidden="true"></div>
+        <div class="title-content">
+          <p class="eyebrow">2026 고양시 빅데이터 활용 아이디어 공모전 · 본선</p>
+          <h1>닿지 않는 <span>돌봄</span></h1>
+          <p class="title-question">우선 도입지가 아니라<br><strong>현장확인 순서</strong>를 제안합니다</p>
+          <div class="title-rule"></div>
+          <p class="team-name">팀 도달 · 고양시 교통·복지 정책 사전검토</p>
+        </div>
+        <div class="slide-number">01</div>
+      </section>
+
+      <section class="slide" data-slide="2" aria-label="2 / 15">
+        <header class="slide-header">
+          <p class="section-label">문제 재정의</p>
+          <h2>같은 숫자처럼 보였지만, 세 정책 모수는 서로 다른 대상을 뜻합니다</h2>
+        </header>
+        <div class="semantic-numbers" aria-label="공식 수치 세 개의 정의 비교">
+          <article class="semantic-item teal">
+            <p>우선관리 대상 <strong>추정</strong></p>
+            <div class="semantic-value">약 2.9만<small>명</small></div>
+            <p class="semantic-definition">2026년 3월 규모 추정</p>
+            <p class="semantic-caution">현재 이용자 수가 아님</p>
+          </article>
+          <div class="not-equal" aria-hidden="true">≠</div>
+          <article class="semantic-item blue">
+            <p>통합돌봄 서비스 <strong>목록</strong></p>
+            <div class="semantic-value">62<small>개</small></div>
+            <p class="semantic-definition">기존 57 + 특화 5</p>
+            <p class="semantic-caution">62개 물리적 목적지가 아님</p>
+          </article>
+          <div class="not-equal" aria-hidden="true">≠</div>
+          <article class="semantic-item amber">
+            <p>빅데이터 선별 <strong>조사대상</strong></p>
+            <div class="semantic-value">1,972<small>명</small></div>
+            <p class="semantic-definition">특정 위험군 전수조사 모집단</p>
+            <p class="semantic-caution">전체 돌봄 대상자가 아님</p>
+          </article>
+        </div>
+        <p class="thesis-line danger">서로 다른 분모를 곱하거나 대체하면, 정책 문제가 왜곡됩니다.</p>
+        <footer class="source-line">출처: 고양시 공식 보도자료(2026-03-18, 2026-06-01, 2026-07-10) · 정의 교차검증 2026-08-09</footer>
+        <div class="slide-number">02</div>
+      </section>
+
+      <section class="slide" data-slide="3" aria-label="3 / 15">
+        <header class="slide-header">
+          <p class="section-label">정책 질문</p>
+          <h2>문제는 돌봄 대상자 선별만이 아니라 목적지까지 닿는 이동 가능성입니다</h2>
+        </header>
+        <div class="question-shift" aria-label="누가 필요한가에서 얼마나 멀리 있는가로 정책 질문을 확장">
+          <div class="question-old">
+            <span class="question-tag">확인된 질문</span>
+            <p>WHO</p>
+            <h3>누가 돌봄이 필요한가</h3>
+            <div class="person-rings" aria-hidden="true"><i></i><i></i><i></i></div>
+            <small>고양시 빅데이터 선별·전수조사</small>
+          </div>
+          <div class="question-bridge" aria-hidden="true">
+            <span></span><span></span><span></span><b>+</b>
+          </div>
+          <div class="question-new">
+            <span class="question-tag">추가할 질문</span>
+            <p>HOW FAR · WHERE FIRST</p>
+            <h3>서비스에 얼마나 멀리 있는가</h3>
+            <div class="distance-line" aria-hidden="true"><i></i><b></b><i></i></div>
+            <small>이동 공백을 행정동 단위로 먼저 확인</small>
+          </div>
+        </div>
+        <p class="thesis-line">개인의 수요를 다시 예측하지 않고, <strong>교통·복지 부서가 확인할 지역</strong>을 좁힙니다.</p>
+        <footer class="source-line">정책 질문: 제출 포스터 「복지 문제를 교통 데이터로 푼다」 · MVP 의사결정 계약</footer>
+        <div class="slide-number">03</div>
+      </section>
+
+      <section class="slide" data-slide="4" aria-label="4 / 15">
+        <header class="slide-header compact">
+          <p class="section-label">제출 분석</p>
+          <h2>제출안은 수요·의료·교통을 100m 격자에서 결합했습니다</h2>
+        </header>
+        <div class="analysis-pipeline" aria-label="제출 분석 파이프라인">
+          <div class="layer-node demand">
+            <span>L1 · 수요</span>
+            <strong>65세 이상<br>70세 이상 1인세대</strong>
+            <small>44개 행정동</small>
+          </div>
+          <div class="layer-node facility">
+            <span>L2 · 의료</span>
+            <strong>병·의원 등<br>약국</strong>
+            <small>1,893개 계산행</small>
+          </div>
+          <div class="layer-node bus">
+            <span>L3 · 교통</span>
+            <strong>정류장<br>노선 공급</strong>
+            <small>2,095개 경계 안</small>
+          </div>
+          <div class="pipeline-arrow" aria-hidden="true">→</div>
+          <div class="metric-stack">
+            <div><b>RI</b><span>도달성 지수</span></div>
+            <div><b>CAG</b><span>이동 사각도</span></div>
+            <div><b>DSS</b><span>후보 선별 점수</span></div>
+          </div>
+          <div class="pipeline-arrow" aria-hidden="true">→</div>
+          <div class="candidate-output">
+            <strong>8</strong><span>개 후보동</span>
+            <small>현장확인 시작점</small>
+          </div>
+        </div>
+        <div class="formula-band">
+          <span>기준 대리명세</span>
+          <code>DSS = 0.5·z(CAG) + 0.3·z(버스 비효율) + 0.2·z(의료시설 거리)</code>
+          <b>공식 정책 가중치가 아님</b>
+        </div>
+        <footer class="source-line">출처: 제출 A1 포스터 · 재현분석 model_spec · 면적격자 26,595개(100m)</footer>
+        <div class="slide-number">04</div>
+      </section>
+
+      <section class="slide" data-slide="5" aria-label="5 / 15">
+        <header class="slide-header compact">
+          <p class="section-label">재현 계약</p>
+          <h2>재검증은 44개 동과 다섯 출처층의 기준시점을 다시 고정했습니다</h2>
+        </header>
+        <div class="snapshot-visual" id="snapshot-visual" aria-label="다섯 출처층과 기준일"></div>
+        <div class="snapshot-metrics">
+          <div><strong>44</strong><span>행정동</span></div>
+          <div><strong>26,595</strong><span>100m 면적격자</span></div>
+          <div><strong>42</strong><span>고정 난수시드</span></div>
+          <div><strong>SHA-256</strong><span>원자료 계보</span></div>
+        </div>
+        <p class="thesis-line subtle">버스·경계·인구·시설의 기준일이 다른 <strong>혼합 스냅샷</strong>이므로 실시간 현황으로 읽지 않습니다.</p>
+        <footer class="source-line">출처층: MOIS 인구·1인세대, HIRA 병의원·약국, 경기도 고양시 버스정류장, admdongkor 행정동 경계</footer>
+        <div class="slide-number">05</div>
+      </section>
+
+      <section class="slide" data-slide="6" aria-label="6 / 15">
+        <header class="slide-header compact">
+          <p class="section-label">GIS 진단</p>
+          <h2>행정동 지도를 보면 돌봄 수요와 이동 공백이 같은 모양이 아닙니다</h2>
+        </header>
+        <div class="dual-map">
+          <figure>
+            <figcaption><strong>70세 이상 1인세대</strong><span>행정동별 세대수 · 수요 대리</span></figcaption>
+            <div class="map-slot" id="single-map"></div>
+          </figure>
+          <div class="map-not-equal" aria-hidden="true">≠</div>
+          <figure>
+            <figcaption><strong>의료시설 최근접거리</strong><span>100m 격자 가중평균 · 접근 대리</span></figcaption>
+            <div class="map-slot" id="distance-map"></div>
+          </figure>
+        </div>
+        <div class="map-legend" aria-label="지도 범례"><span><i class="low"></i>낮음</span><span><i class="mid"></i>중간</span><span><i class="high"></i>높음</span><span><i class="outline"></i>후보 8개</span></div>
+        <footer class="source-line">MOIS 2026-06-30 · HIRA 2026-06-30 · admdongkor 2026-04-01 · 직선거리 기반 대리분석</footer>
+        <div class="slide-number">06</div>
+      </section>
+
+      <section class="slide" data-slide="7" aria-label="7 / 15">
+        <header class="slide-header compact">
+          <p class="section-label">재현 결과</p>
+          <h2>후보 8개 집합은 그대로 재현됐습니다</h2>
+        </header>
+        <div class="candidate-layout">
+          <div class="candidate-map" id="candidate-map"></div>
+          <div class="candidate-proof">
+            <div class="proof-number"><strong>8 / 8</strong><span>후보집합 일치</span></div>
+            <ol id="candidate-list" aria-label="후보 8개 행정동"></ol>
+            <p>가나다순 표시 · 확정 우선순위 아님</p>
+          </div>
+        </div>
+        <div class="truth-strip"><span class="yes">재현됨</span><strong>후보가 된 동의 집합</strong><span class="no">재현 안 됨</span><strong>포스터 점수·세부 순위</strong></div>
+        <footer class="source-line">재현 대리모형 poster_proxy_v1 · 현행 비교 3개 행정동 제외 후 상위 8개 집합 비교</footer>
+        <div class="slide-number">07</div>
+      </section>
+
+      <section class="slide" data-slide="8" aria-label="8 / 15">
+        <header class="slide-header compact">
+          <p class="section-label">후보 해석</p>
+          <h2>후보가 된 이유는 동마다 다릅니다</h2>
+        </header>
+        <figure class="candidate-scatter">
+          <figcaption>버스 노선공급 × 의료시설 거리 <span>원 크기: 70세 이상 1인세대 · 색: 고령화율</span></figcaption>
+          <div id="candidate-scatter"></div>
+        </figure>
+        <div class="signal-callouts">
+          <p><i class="teal-dot"></i><strong>관산동</strong> 고령화율·1인세대 신호</p>
+          <p><i class="blue-dot"></i><strong>가좌·주교동</strong> 낮은 노선공급 신호</p>
+          <p><i class="coral-dot"></i><strong>효자동</strong> 긴 의료시설 거리 신호</p>
+        </div>
+        <footer class="source-line">후보 8개 공개대리 지표 · 원의 위치와 크기는 정책효과나 개인 수요를 뜻하지 않음</footer>
+        <div class="slide-number">08</div>
+      </section>
+
+      <section class="slide" data-slide="9" aria-label="9 / 15">
+        <header class="slide-header compact">
+          <p class="section-label">주장 원장</p>
+          <h2>그러나 29개 주장 중 수치와 순위는 다시 고쳐야 했습니다</h2>
+        </header>
+        <div class="claim-ledger-visual" id="claim-ledger"></div>
+        <div class="rank-shift" id="rank-shift" aria-label="포스터 순위와 재현 대리순위 비교"></div>
+        <p class="thesis-line danger compact-line"><strong>후보집합 8/8</strong>과 <strong>점수·순위 재현</strong>은 같은 주장이 아닙니다.</p>
+        <footer class="source-line">poster_claim_comparison 29개 · poster_rank_comparison · 재현분석 2026-08-10</footer>
+        <div class="slide-number">09</div>
+      </section>
+
+      <section class="slide" data-slide="10" aria-label="10 / 15">
+        <header class="slide-header compact">
+          <p class="section-label">제한 민감도</p>
+          <h2>제한된 가중치 45개에서는 5개 동만 계속 남았습니다</h2>
+        </header>
+        <div class="robustness-layout">
+          <div class="robust-bars" id="bounded-bars"></div>
+          <aside class="robust-summary">
+            <p>제한 범위</p>
+            <strong>45</strong><span>개 조합</span>
+            <dl><div><dt>항상 포함</dt><dd>5개 동</dd></div><div><dt>최소 Jaccard</dt><dd>0.455</dd></div></dl>
+            <small>포함수는 확률이 아닙니다</small>
+          </aside>
+        </div>
+        <p class="thesis-line subtle compact-line">가좌·고양·관산·주교·행주동은 이 <strong>제한 범위 안</strong>에서만 45/45 포함됐습니다.</p>
+        <footer class="source-line">가중치 제한: CAG 0.30–0.70 · 버스 0.15–0.50 · 시설 0.10–0.40 · 0.05 간격</footer>
+        <div class="slide-number">10</div>
+      </section>
+
+      <section class="slide" data-slide="11" aria-label="11 / 15">
+        <header class="slide-header compact">
+          <p class="section-label">경계 감사</p>
+          <h2>가중치 경계를 231개로 넓히면 고양동만 끝까지 남았습니다</h2>
+        </header>
+        <div class="boundary-compare" id="boundary-compare" aria-label="45개 제한 민감도와 231개 경계감사 비교"></div>
+        <div class="audit-verdict">
+          <span>45개 제한 범위</span><strong>5개</strong><i>→</i><span>231개 전체 비음수 경계</span><strong>1개</strong>
+        </div>
+        <p class="thesis-line danger compact-line">“강건한 5개”가 아니라 <strong>범위를 명시해야만 성립하는 5개</strong>입니다.</p>
+        <footer class="source-line">경계감사: 세 가중치 0–1, 합 1, 0.05 간격 231개 · 최소 Jaccard 0.333 · 감사용 극단값 포함</footer>
+        <div class="slide-number">11</div>
+      </section>
+
+      <section class="slide" data-slide="12" aria-label="12 / 15">
+        <header class="slide-header compact">
+          <p class="section-label">공간통계 반증</p>
+          <h2>취약 High-High 군집은 관산동에서만 한 이웃 정의에서 관찰됐습니다</h2>
+        </header>
+        <div class="spatial-methods" id="spatial-methods" aria-label="공간가중치 방식별 Moran 분석 비교"></div>
+        <div class="spatial-note">
+          <strong>Queen 경계 인접</strong>에서만 관산동 HH가 FDR 5%를 통과했고,
+          <strong>중심점 kNN 4·6</strong>에서는 유의 HH가 없었습니다.
+        </div>
+        <p class="thesis-line subtle compact-line">공간가중치 정의가 바뀌면 군집 해석도 바뀌므로, <strong>도입 근거가 아니라 현장확인 신호</strong>로 씁니다.</p>
+        <footer class="source-line">Global/Local Moran · 9,999 permutations · seed 42 · BH-FDR 44개 동 보정</footer>
+        <div class="slide-number">12</div>
+      </section>
+
+      <section class="slide" data-slide="13" aria-label="13 / 15">
+        <header class="slide-header compact">
+          <p class="section-label">정책 대안</p>
+          <h2>DRT는 다섯 선택지 중 하나이며 자동 추천이 아닙니다</h2>
+        </header>
+        <div class="policy-fan" aria-label="다섯 정책대안 비교">
+          <div class="policy-center"><span>선택 동</span><strong>현장 가정</strong><small>수요·시간·디지털·방문 가능성</small></div>
+          <article class="policy-option realtime"><b>01</b><strong>실시간 DRT</strong><span>분산·실시간 수요</span></article>
+          <article class="policy-option phone"><b>02</b><strong>전화예약형 DRT</strong><span>낮은 디지털 접근성</span></article>
+          <article class="policy-option fixed"><b>03</b><strong>고정노선·복지셔틀</strong><span>시간·방향 집중</span></article>
+          <article class="policy-option voucher"><b>04</b><strong>바우처 택시</strong><span>적고 불규칙한 이동</span></article>
+          <article class="policy-option visit"><b>05</b><strong>방문서비스 연계</strong><span>이동을 서비스로 대체</span></article>
+        </div>
+        <div class="policy-warning"><strong>demo-unvalidated-v1</strong><span>33개 공개 규칙은 조건 일치도 시연용이며, 효과·비용·공식 점수식이 아닙니다.</span></div>
+        <footer class="source-line">MVP 정책엔진 5개 대안·33개 명시 규칙 · 국토부·고양시 공식 추천모형 아님</footer>
+        <div class="slide-number">13</div>
+      </section>
+
+      <section class="slide" data-slide="14" aria-label="14 / 15">
+        <header class="slide-header compact">
+          <p class="section-label">2분 MVP 시연</p>
+          <h2>MVP는 후보 선택에서 기록 가능한 파일럿 가설까지 연결합니다</h2>
+        </header>
+        <div class="mvp-flow" aria-label="MVP 정책검토 흐름">
+          <div><b>1</b><strong>고양시 현황</strong><span>44개 동 GIS</span></div>
+          <i aria-hidden="true">→</i>
+          <div><b>2</b><strong>후보 선택</strong><span>8개 이유 비교</span></div>
+          <i aria-hidden="true">→</i>
+          <div><b>3</b><strong>대안 비교</strong><span>현장 가정 입력</span></div>
+          <i aria-hidden="true">→</i>
+          <div><b>4</b><strong>검토 기록</strong><span>상태·사유 JSON</span></div>
+        </div>
+        <div class="pilot-measurement">
+          <div class="kpi-loop" aria-hidden="true"><span>측정</span><i></i><i></i><i></i><i></i></div>
+          <div class="kpi-list">
+            <p><strong>예약·호출 성공률</strong><span>성공 배차 ÷ 유효 요청</span></p>
+            <p><strong>대기·총이동시간</strong><span>중앙값·P90 비교</span></p>
+            <p><strong>돌봄 연계완료율</strong><span>제공 완료 ÷ 적격 의뢰</span></p>
+            <p><strong>완료 1건당 비용</strong><span>총운영비 ÷ 완료 이동·연계</span></p>
+          </div>
+          <a class="launch-mvp" href="../" target="_blank" rel="noopener">MVP 열기 <span>↗</span></a>
+        </div>
+        <div class="stop-rule"><strong>중단조건</strong> 분모·기준선·비교권역·로그 결합키가 없으면 효과·비용 개선을 주장하지 않습니다.</div>
+        <footer class="source-line">시연 범위: 로컬·오프라인 가능 정적 앱 · 개인·OD·호출로그 미포함 · 담당자 의사결정 보조</footer>
+        <div class="slide-number">14</div>
+      </section>
+
+      <section class="slide slide-closing" data-slide="15" aria-label="15 / 15">
+        <div class="closing-map" id="closing-map" aria-hidden="true"></div>
+        <div class="closing-content">
+          <p class="eyebrow">결론</p>
+          <h2>정답보다<br><span>검증 순서</span>를<br>고양시에 남기겠습니다</h2>
+          <div class="closing-sequence">
+            <div><strong>8</strong><span>후보집합 공개</span></div><i>→</i>
+            <div><strong>45·231</strong><span>경계 반증</span></div><i>→</i>
+            <div><strong>현장</strong><span>로그·비용 검증</span></div>
+          </div>
+          <p class="closing-request">다음 판단에 필요한 데이터: 실제 목적지·시간대별 이동 · 호출 실패 · 운영원가</p>
+          <div class="closing-links">
+            <a href="../" target="_blank" rel="noopener">정책 대시보드 시연</a>
+            <a href="https://github.com/Suya020504/goyang-care-policy-dashboard" target="_blank" rel="noopener">공개 재현 저장소</a>
+          </div>
+        </div>
+        <div class="slide-number">15</div>
+      </section>
+    </main>
+  </div>
+
+  <div class="deck-progress" aria-hidden="true"><i id="progress-bar"></i></div>
+  <nav class="deck-controls" aria-label="슬라이드 조작">
+    <button type="button" id="prev-slide" aria-label="이전 슬라이드">←</button>
+    <span id="slide-counter" aria-live="polite">1 / 15</span>
+    <button type="button" id="next-slide" aria-label="다음 슬라이드">→</button>
+    <button type="button" id="fullscreen" aria-label="전체 화면">⛶</button>
+    <button type="button" id="print-deck" aria-label="인쇄 또는 PDF 저장">PDF</button>
+    <a href="../" target="_blank" rel="noopener" aria-label="MVP 새 창에서 열기">MVP ↗</a>
+  </nav>
+
+  <noscript>이 발표자료는 GIS와 차트를 표시하기 위해 JavaScript가 필요합니다.</noscript>
+  <script defer src="../public/data/data.js"></script>
+  <script defer src="../public/data/pro_analysis.js"></script>
+  <script defer src="../public/data/boundaries.js"></script>
+  <script defer src="./slides.js"></script>
+</body>
+</html>

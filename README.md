@@ -4,7 +4,9 @@
 
 이 저장소는 팀 `도달`의 2026년 고양시 빅데이터 공모전 본선 준비용 공개 MVP입니다. 고양시 공식 서비스가 아니며, 개인의 실제 돌봄 필요도·이동경로·서비스 이용기록을 사용하지 않습니다.
 
-- 라이브 MVP: 배포 후 URL 갱신 예정
+- 라이브 MVP: <https://goyang-care-policy-dashboard.vercel.app/>
+- 관객용 HTML 발표자료: <https://goyang-care-policy-dashboard.vercel.app/presentation/>
+- 발표자 대본·대조 화면: <https://goyang-care-policy-dashboard.vercel.app/presenter/>
 - GitHub: <https://github.com/Suya020504/goyang-care-policy-dashboard>
 - 분석 단위: 고양시 44개 행정동
 - 실행 방식: 정적 HTML, 서버·로그인·API 키 없음
@@ -56,9 +58,18 @@ python -m http.server 4173
 
 그다음 <http://localhost:4173>을 엽니다.
 
+### 발표자료
+
+- 관객 화면: `presentation/index.html`
+- 발표자 대본·대조 화면: `presenter/index.html`
+- 특정 슬라이드 직접 열기: `presentation/index.html?slide=11`
+- 발표자 화면 특정 슬라이드: `presenter/index.html?slide=14`
+
+관객 화면은 15장 16:9 덱이며 화살표·Home/End·전체화면·인쇄/PDF를 지원합니다. 발표자 화면은 관객 슬라이드와 별도 대본을 나란히 보여 주며, 본 발표 12분·화면 전환 1분·MVP 2분의 진행 시간을 계산합니다. 관객용 `presentation/**`에는 대본 데이터가 포함되지 않습니다.
+
 ## 테스트
 
-Node.js 20 이상에서 별도 패키지 설치 없이 데이터 계약·정책 규칙·공개 배포 검사를 실행할 수 있습니다.
+Node.js 20 이상에서 데이터 계약·정책 규칙·공개 배포 검사를 실행할 수 있습니다. 단위 테스트는 설치 없이 실행되고, 브라우저 검사용 `playwright-core`는 `npm install`로 준비합니다.
 
 ```powershell
 npm.cmd test
@@ -69,6 +80,12 @@ npm.cmd test
 ```powershell
 $env:PLAYWRIGHT_CHROMIUM_PATH='C:\Program Files\Google\Chrome\Application\chrome.exe'
 npm.cmd run test:browser
+```
+
+발표자료만 확인하려면 다음 명령을 사용합니다.
+
+```powershell
+npm.cmd run test:presentation
 ```
 
 ## 공개판 GIS
@@ -97,8 +114,8 @@ python scripts/build_public_boundary.py `
 - [데이터 라이선스](DATA_LICENSES.md)
 - [변경 이력](CHANGELOG.md)
 - [기여 가이드](CONTRIBUTING.md)
+- [발표자료 구성·사용법](reports/PRESENTATION.md)
 
 ## 라이선스
 
 팀이 작성한 코드·디자인·보고서는 별도 허가가 없는 한 모든 권리를 보유합니다. 제3자 공공데이터와 경계 파생물은 각 원 라이선스를 따릅니다. 자세한 범위는 [LICENSE](LICENSE)와 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)를 확인하세요.
-

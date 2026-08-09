@@ -1,14 +1,17 @@
 {
   "name": "goyang-care-policy-dashboard",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "고양시 공개데이터를 활용한 통합돌봄·교통 정책 사전검토 MVP",
   "scripts": {
-    "test": "node --test tests/data-contract.test.js tests/policy-engine.test.js tests/public-release.test.js",
-    "test:browser": "node tests/browser-smoke.js"
+    "test": "node --test tests/data-contract.test.js tests/policy-engine.test.js tests/public-release.test.js tests/presentation.test.js",
+    "test:browser": "node tests/browser-smoke.js && node tests/presentation-browser.js",
+    "test:presentation": "node tests/presentation-browser.js"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "playwright-core": "1.62.0"
   }
 }
-
