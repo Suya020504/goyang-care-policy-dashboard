@@ -1,0 +1,13 @@
+node_modules/
+.vercel/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+tmp/
+test-results/
+playwright-report/
+screenshots/
+.DS_Store
+Thumbs.db
