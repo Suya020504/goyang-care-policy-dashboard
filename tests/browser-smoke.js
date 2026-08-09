@@ -5,7 +5,8 @@ const { chromium } = require('playwright');
 
 async function main() {
   const root = path.resolve(__dirname, '..');
-  const url = `${pathToFileURL(path.join(root, 'index.html')).href}?demo=1`;
+  const baseUrl = process.env.TEST_URL || pathToFileURL(path.join(root, 'index.html')).href;
+  const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}demo=1`;
   const browser = await chromium.launch({
     headless: true,
     executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || chromium.executablePath(),
