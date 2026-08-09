@@ -109,8 +109,10 @@ test('발표자 화면은 관객 덱 URL과 분리 대본을 함께 사용한다
 test('공개 브라우저 검사는 잠긴 playwright-core 계약을 사용한다', () => {
   const packageJson = JSON.parse(read('package.json'));
   const lock = JSON.parse(read('package-lock.json'));
+  const vercel = JSON.parse(read('vercel.json'));
   assert.equal(packageJson.devDependencies['playwright-core'], '1.62.0');
   assert.equal(lock.packages['node_modules/playwright-core'].version, '1.62.0');
   assert.match(read('tests/browser-smoke.js'), /require\('playwright-core'\)/);
   assert.match(read('tests/presentation-browser.js'), /require\('playwright-core'\)/);
+  assert.equal(vercel.cleanUrls, false, 'HTML 상대 경로를 보존하려면 Vercel cleanUrls를 끈다');
 });

@@ -31,8 +31,9 @@ Vercel의 무프레임워크 자동 감지가 저장소의 `public/` 폴더를 �
 
 ## 2026-08-10 - 발표자료 경로 추가
 
-- 관객 덱: `/presentation/`
-- 발표자 대본 화면: `/presenter/`
+- 관객 덱: `/presentation/index.html`
+- 발표자 대본 화면: `/presenter/index.html`
 - 관객 덱과 대본 번들은 분리되어 있으며, 발표자 화면만 `script-data.js`를 읽습니다.
 - 로컬 오프라인 실행에서도 iframe이 폴더 목록을 열지 않도록 `presentation/index.html`을 명시합니다.
+- Vercel `cleanUrls`는 `false`로 둡니다. `/presentation`으로 확장자를 제거하면 상대 CSS·JS 경로가 루트로 해석되어 화면이 깨집니다.
 - 재배포 후 루트·관객 덱·발표자 화면 세 경로를 각각 HTTP 200과 실브라우저로 확인합니다.

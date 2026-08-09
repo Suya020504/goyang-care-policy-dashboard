@@ -5,8 +5,8 @@
 이 저장소는 팀 `도달`의 2026년 고양시 빅데이터 공모전 본선 준비용 공개 MVP입니다. 고양시 공식 서비스가 아니며, 개인의 실제 돌봄 필요도·이동경로·서비스 이용기록을 사용하지 않습니다.
 
 - 라이브 MVP: <https://goyang-care-policy-dashboard.vercel.app/>
-- 관객용 HTML 발표자료: <https://goyang-care-policy-dashboard.vercel.app/presentation/>
-- 발표자 대본·대조 화면: <https://goyang-care-policy-dashboard.vercel.app/presenter/>
+- 관객용 HTML 발표자료: <https://goyang-care-policy-dashboard.vercel.app/presentation/index.html>
+- 발표자 대본·대조 화면: <https://goyang-care-policy-dashboard.vercel.app/presenter/index.html>
 - GitHub: <https://github.com/Suya020504/goyang-care-policy-dashboard>
 - 분석 단위: 고양시 44개 행정동
 - 실행 방식: 정적 HTML, 서버·로그인·API 키 없음

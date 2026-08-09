@@ -2,8 +2,8 @@
 
 ## 공개 경로
 
-- 관객용 덱: <https://goyang-care-policy-dashboard.vercel.app/presentation/>
-- 발표자 대본·대조 화면: <https://goyang-care-policy-dashboard.vercel.app/presenter/>
+- 관객용 덱: <https://goyang-care-policy-dashboard.vercel.app/presentation/index.html>
+- 발표자 대본·대조 화면: <https://goyang-care-policy-dashboard.vercel.app/presenter/index.html>
 - 정책 대시보드 MVP: <https://goyang-care-policy-dashboard.vercel.app/>
 
 ## 발표 구성
