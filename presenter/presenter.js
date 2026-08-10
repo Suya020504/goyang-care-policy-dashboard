@@ -46,6 +46,7 @@
   const state = {
     index: readInitialSlideIndex(),
     toastTimer: null,
+    expectedIframeSlide: null,
   };
 
   function clamp(value, min, max) {
@@ -181,7 +182,12 @@
 
   function updateIframe(slideNumber) {
     const nextUrl = deckUrl(slideNumber);
-    if (elements.iframe.src !== nextUrl) elements.iframe.src = nextUrl;
+    if (elements.iframe.src !== nextUrl) {
+      state.expectedIframeSlide = slideNumber;
+      elements.iframe.src = nextUrl;
+    } else {
+      state.expectedIframeSlide = null;
+    }
     elements.iframe.title = `관객용 슬라이드 ${slideNumber}: ${slides[slideNumber - 1].shortTitle}`;
   }
 
@@ -196,6 +202,8 @@
       const search = elements.iframe.contentWindow?.location?.search;
       if (!search) return;
       const slideNumber = Number(new URLSearchParams(search).get('slide'));
+      if (state.expectedIframeSlide !== null && slideNumber !== state.expectedIframeSlide) return;
+      if (slideNumber === state.expectedIframeSlide) state.expectedIframeSlide = null;
       if (Number.isFinite(slideNumber) && slideNumber - 1 !== state.index) {
         goTo(slideNumber - 1);
       }
@@ -309,6 +317,8 @@
     if (event.origin !== window.location.origin) return;
     const slideNumber = Number(event.data?.slide);
     if (event.data?.type === 'presentation:slidechange' && Number.isFinite(slideNumber)) {
+      if (state.expectedIframeSlide !== null && slideNumber !== state.expectedIframeSlide) return;
+      if (slideNumber === state.expectedIframeSlide) state.expectedIframeSlide = null;
       goTo(slideNumber - 1);
     }
   });

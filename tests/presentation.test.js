@@ -103,6 +103,7 @@ test('발표자 화면은 관객 덱 URL과 분리 대본을 함께 사용한다
   assert.match(html, /id="slide-preview"/);
   assert.match(html, /id="script-copy"/);
   assert.match(html, /id="demo-cue"/);
+  assert.match(read('presenter/presenter.js'), /expectedIframeSlide/);
   assertLocalReferencesExist('presenter/index.html');
 });
 
