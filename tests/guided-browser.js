@@ -65,6 +65,14 @@ async function main() {
   assert.equal(await page.locator('.guided-map-svg path').count(), 44);
   assert.equal(await page.locator('.guided-map-svg path.is-candidate').count(), 8);
   assert.equal(await page.locator('.guided-map-svg path.is-selected').count(), 1);
+  const mapFills = await page.locator('.guided-map-svg').evaluate((svg) => ({
+    selected: getComputedStyle(svg.querySelector('path.is-selected')).fill,
+    candidate: getComputedStyle(svg.querySelector('path.is-candidate:not(.is-selected)')).fill,
+    other: getComputedStyle(svg.querySelector('path:not(.is-candidate)')).fill,
+  }));
+  assert.notEqual(mapFills.selected, mapFills.candidate);
+  assert.notEqual(mapFills.candidate, mapFills.other);
+  assert.notEqual(mapFills.other, 'rgb(0, 0, 0)');
   const signals = await page.locator('.guided-signal-list').innerText();
   assert.match(signals, /27\.7%/);
   assert.match(signals, /19\.4%/);

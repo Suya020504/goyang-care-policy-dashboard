@@ -570,6 +570,52 @@
   display: block;
 }
 
+.guided-map-path {
+  fill: #f4f7fb;
+  stroke: #a9bfdc;
+  stroke-width: 1.1;
+  vector-effect: non-scaling-stroke;
+  transition: fill 160ms ease, stroke 160ms ease;
+}
+
+.guided-map-path.is-candidate {
+  fill: #e8f1ff;
+  cursor: pointer;
+}
+
+.guided-map-path.is-candidate:hover,
+.guided-map-path.is-candidate:focus {
+  fill: #cfe1ff;
+  stroke: var(--guided-cobalt);
+  stroke-width: 2.2;
+  outline: none;
+}
+
+.guided-map-path.is-selected,
+.guided-map-path.is-selected:hover,
+.guided-map-path.is-selected:focus {
+  fill: var(--guided-cobalt);
+  stroke: #fff;
+  stroke-width: 2.4;
+}
+
+.guided-map-selected-label circle {
+  fill: var(--guided-cobalt);
+  stroke: #fff;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.guided-map-selected-label text {
+  fill: var(--guided-navy);
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  font-size: 20px;
+  font-weight: 800;
+}
+
 .guided-map-empty {
   align-content: center;
   gap: 6px;
