@@ -1,0 +1,495 @@
+(function attachGuidedView(root, factory) {
+  'use strict';
+
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  root.DDOL_GUIDED_VIEW = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function createGuidedView() {
+  'use strict';
+
+  const STEPS = [
+    { id: 1, label: '판단 질문', short: '질문' },
+    { id: 2, label: '행주동 신호', short: '신호' },
+    { id: 3, label: '근거 확실성', short: '근거' },
+    { id: 4, label: '확인할 빈칸', short: '빈칸' },
+    { id: 5, label: '대안별 조사', short: '대안' },
+    { id: 6, label: '체크리스트 저장', short: '저장' },
+  ];
+
+  const DEFAULT_FIELD_CHECKS = [
+    { id: 'trip-purpose', label: '주요 이용 서비스와 목적지 유형', hint: '병원·복지관·장보기 등 실제 이동 목적을 확인합니다.' },
+    { id: 'trip-pattern', label: '이용 빈도·시간대·방향 집중', hint: '언제, 얼마나 자주, 어느 방향으로 이동하는지 확인합니다.' },
+    { id: 'booking-access', label: '앱·전화 호출 가능성과 미이용 사유', hint: '디지털 접근성과 보호자·상담원 지원 필요를 확인합니다.' },
+    { id: 'mobility-support', label: '휠체어·승하차·동행지원 필요', hint: '차량 접근성과 돌봄 인력 동행 조건을 확인합니다.' },
+    { id: 'service-substitute', label: '방문서비스 대체 가능성과 제공기관 수용력', hint: '이동 대신 서비스가 찾아갈 수 있는지 확인합니다.' },
+    { id: 'operation-data', label: '차량·운영인력·호출·대기·OD·비용 자료', hint: '효과와 비용을 검증할 최소 운영자료를 확인합니다.' },
+  ];
+
+  const DEFAULT_POLICY_QUESTIONS = [
+    { id: 'visitSubstitution', text: '이동 대신 방문서비스로 제공할 수 있나요?', note: '제공기관의 서비스 범위와 수용력을 함께 확인합니다.' },
+    { id: 'demandConcentration', text: '수요가 특정 시간대와 방향에 모이나요?', note: '집중 수요는 고정노선이나 복지셔틀 검토 근거가 됩니다.' },
+    { id: 'phoneReservation', text: '앱 호출이 어려워 전화예약이 필요한가요?', note: '디지털 접근성과 상담원 연결 조건을 확인합니다.' },
+    { id: 'irregularDemand', text: '수요가 적고 시간·목적지가 분산되어 있나요?', note: '실제 호출과 이동패턴을 확보한 뒤 판단합니다.' },
+    { id: 'accessibleVehicle', text: '휠체어·승하차·동행지원 차량이 필요한가요?', note: '필요 차량과 돌봄 인력 조건이 사업 대안을 가릅니다.' },
+  ];
+
+  const DEFAULT_ALTERNATIVES = [
+    '방문서비스 강화',
+    '고정노선·복지셔틀',
+    '전화예약형 이동지원',
+    '택시·바우처',
+    'DRT 파일럿 조사',
+  ];
+
+  function esc(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, Number(value) || min));
+  }
+
+  function asList(value, fallback = []) {
+    return Array.isArray(value) && value.length ? value : fallback;
+  }
+
+  function display(value, fallback = '자료 연결 후 표시') {
+    return value === undefined || value === null || value === '' ? fallback : String(value);
+  }
+
+  function selectedArea(model) {
+    const area = model.area || model.selectedArea || {};
+    return {
+      code: display(area.code || area.id, ''),
+      dong: display(area.dong || area.name, '행주동'),
+      district: display(area.district || area.gu, '덕양구'),
+    };
+  }
+
+  function stateIncludes(state, key, id) {
+    const source = state[key] ?? state.checks;
+    if (Array.isArray(source)) return source.includes(id);
+    if (source && typeof source === 'object') return Boolean(source[id]);
+    return false;
+  }
+
+  function checkedAttribute(checked) {
+    return checked ? ' checked' : '';
+  }
+
+  function stepRail(activeStep, state) {
+    const completed = new Set(asList(state.completedSteps));
+    const visitedStep = clamp(state.visitedStep ?? activeStep, 1, STEPS.length);
+    return `
+      <nav class="guided-rail" aria-label="현장조사 준비 단계">
+        <p class="guided-rail-title">현장조사 준비</p>
+        <ol class="guided-step-list">
+          ${STEPS.map((item) => {
+            const status = item.id === activeStep ? 'is-current' : item.id <= visitedStep || completed.has(item.id) ? 'is-done' : 'is-upcoming';
+            const disabled = item.id > visitedStep + 1;
+            return `<li class="guided-step ${status}">
+              <button class="guided-step-button" type="button" data-action="guided-go-step" data-guided-step="${item.id}" ${disabled ? 'disabled' : ''} ${item.id === activeStep ? 'aria-current="step"' : ''}>
+                <span class="guided-step-number" aria-hidden="true">${item.id}</span>
+                <span class="guided-step-label">${esc(item.label)}</span>
+                <span class="guided-step-short">${esc(item.short)}</span>
+              </button>
+            </li>`;
+          }).join('')}
+        </ol>
+      </nav>`;
+  }
+
+  function header(model) {
+    return `
+      <header class="guided-header">
+        <div class="guided-brand">
+          <strong>${esc(model.productName || '닿지 않는 돌봄')}</strong>
+          <span>${esc(model.productSubtitle || '고양시 교통·복지 현장조사 지원')}</span>
+        </div>
+        <button class="guided-detail-link" type="button" data-action="open-analysis">분석 상세 <span aria-hidden="true">↗</span></button>
+      </header>`;
+  }
+
+  function eyebrow(step, text) {
+    return `<p class="guided-eyebrow"><span>STEP ${step}</span>${esc(text)}</p>`;
+  }
+
+  function actionBar({ action = 'guided-next', step, label, previousStep }) {
+    return `
+      <div class="guided-action-bar">
+        ${previousStep ? `<button class="guided-back-link" type="button" data-action="guided-prev" data-guided-step="${previousStep}"><span aria-hidden="true">←</span> 이전 단계</button>` : '<span></span>'}
+        <button class="guided-primary-action" type="button" data-action="${esc(action)}" data-guided-step="${step}">
+          <span>${esc(label)}</span><span aria-hidden="true">→</span>
+        </button>
+      </div>`;
+  }
+
+  function renderAreaSelect(model, state, area) {
+    const candidates = asList(model.candidates);
+    if (!candidates.length) {
+      return `<div class="guided-area-static"><span>검토 지역</span><strong>${esc(area.dong)} · ${esc(area.district)}</strong></div>`;
+    }
+    return `
+      <label class="guided-area-select">
+        <span>검토 지역</span>
+        <select data-action="guided-area-change" data-guided-field="selectedCode">
+          ${candidates.map((candidate) => {
+            const code = String(candidate.code || candidate.id || candidate.dong || candidate.name || '');
+            const name = candidate.dong || candidate.name || code;
+            const district = candidate.district || candidate.gu || '';
+            const selected = String(state.selectedCode || area.code || area.dong) === code || area.dong === name;
+            return `<option value="${esc(code)}"${selected ? ' selected' : ''}>${esc(name)}${district ? ` · ${esc(district)}` : ''}</option>`;
+          }).join('')}
+        </select>
+      </label>`;
+  }
+
+  function renderStepOne(model, state) {
+    const area = selectedArea(model);
+    const areaCount = display(model.areaCount, '44');
+    const candidateCount = display(model.candidateCount, '8');
+    return `
+      <section class="guided-page guided-page-intro" aria-labelledby="guided-title">
+        ${eyebrow(1, '판단 범위를 먼저 고정합니다')}
+        <h1 id="guided-title">오늘 무엇을 판단할까요?</h1>
+        <p class="guided-lead"><strong>${esc(area.dong)}</strong>을 사업 도입지가 아니라 <strong>현장조사 대상</strong>으로 올릴지 검토합니다.</p>
+
+        <div class="guided-funnel" aria-label="검토 범위: 고양시 행정동, 제출 후보, 행주동 순서">
+          <div class="guided-funnel-node"><span>전체 범위</span><strong>고양시 ${esc(areaCount)}개 동</strong></div>
+          <span class="guided-funnel-arrow" aria-hidden="true">→</span>
+          <div class="guided-funnel-node"><span>제출 후보</span><strong>${esc(candidateCount)}곳</strong></div>
+          <span class="guided-funnel-arrow" aria-hidden="true">→</span>
+          <div class="guided-funnel-node is-selected"><span>오늘 확인</span><strong>${esc(area.dong)}</strong></div>
+        </div>
+
+        <div class="guided-scope-lines">
+          <div><span class="guided-scope-icon is-do" aria-hidden="true">i</span><p><strong>이번 흐름이 하는 일</strong><span>왜 먼저 조사할지, 무엇을 확인할지 순서대로 설명합니다.</span></p></div>
+          <div><span class="guided-scope-icon is-not" aria-hidden="true">×</span><p><strong>이번 흐름이 하지 않는 일</strong><span>DRT 도입지·예산·정책 효과를 확정하지 않습니다.</span></p></div>
+        </div>
+
+        ${renderAreaSelect(model, state, area)}
+        ${actionBar({ step: 2, label: `${area.dong} 판단 시작` })}
+      </section>`;
+  }
+
+  function metricValue(metric, side) {
+    const value = side === 'area'
+      ? metric.areaDisplay ?? metric.areaValue ?? metric.area ?? metric.display ?? metric.value
+      : metric.cityDisplay ?? metric.cityValue ?? metric.city ?? metric.benchmarkDisplay ?? metric.benchmark;
+    const unit = metric.unit || '';
+    const alreadyFormatted = side === 'area' ? metric.display !== undefined : metric.benchmarkDisplay !== undefined;
+    return value === undefined || value === null || value === '' ? '자료 연결 대기' : `${value}${alreadyFormatted ? '' : unit}`;
+  }
+
+  function renderSignalMetric(metric) {
+    const direction = metric.direction || metric.reading || '';
+    return `
+      <div class="guided-signal-row">
+        <div class="guided-signal-name">
+          <strong>${esc(metric.label || metric.name || '확인 신호')}</strong>
+          <span>${esc(metric.definition || metric.subtitle || '')}</span>
+        </div>
+        <dl class="guided-signal-values">
+          <div><dt>행주동</dt><dd class="is-area">${esc(metricValue(metric, 'area'))}</dd></div>
+          <div><dt>고양시</dt><dd class="is-city">${esc(metricValue(metric, 'city'))}</dd></div>
+        </dl>
+        <p class="guided-signal-reading">${esc(direction || '비교 기준 확인 필요')}</p>
+      </div>`;
+  }
+
+  function renderMap(model, area) {
+    const markup = typeof model.mapSvg === 'string' && model.mapSvg.trim()
+      ? model.mapSvg
+      : typeof model.mapMarkup === 'string' && model.mapMarkup.trim()
+        ? model.mapMarkup
+        : '';
+    if (!markup) {
+      return `<div class="guided-map-empty" role="status"><strong>행정동 지도를 준비하고 있습니다.</strong><span>지도 없이도 아래 공개데이터 비교는 계속 확인할 수 있습니다.</span></div>`;
+    }
+    return `<div class="guided-map-canvas" role="img" aria-label="고양시 행정동 지도, ${esc(area.dong)} 강조">${markup}</div>`;
+  }
+
+  function renderStepTwo(model) {
+    const area = selectedArea(model);
+    const metrics = asList(model.signalMetrics || model.signals || model.metrics);
+    const signalHeadline = model.signalHeadline || (area.dong === '행주동'
+      ? '고령 수요는 높고, 버스 연결은 낮게 관찰됐습니다.'
+      : `${area.dong}의 수요·버스·의료 접근 신호를 고양시 기준과 비교합니다.`);
+    const signalSubheadline = model.signalSubheadline || (area.dong === '행주동'
+      ? '의료 접근은 시 평균과 비슷합니다. 실제 이동 수요는 현장에서 확인해야 합니다.'
+      : '공개데이터 비교는 현장조사 순서를 돕는 대리신호이며 실제 이동 수요가 아닙니다.');
+    return `
+      <section class="guided-page" aria-labelledby="guided-title">
+        ${eyebrow(2, `${area.dong}의 공개데이터 신호`)}
+        <h1 id="guided-title">왜 ${esc(area.dong)}을 먼저 확인하나요?</h1>
+        <p class="guided-lead">${esc(signalHeadline)}</p>
+        <p class="guided-sublead">${esc(signalSubheadline)}</p>
+
+        <div class="guided-evidence-layout">
+          <div class="guided-signal-list">
+            <div class="guided-signal-legend" aria-label="비교 범례"><span class="is-area">${esc(area.dong)}</span><span class="is-city">고양시 평균</span></div>
+            ${metrics.length ? metrics.map(renderSignalMetric).join('') : `<div class="guided-data-empty"><strong>비교 수치를 연결하고 있습니다.</strong><span>고령 수요·버스 연결·의료 접근 순서로 표시됩니다.</span></div>`}
+            <p class="guided-reading-summary"><span aria-hidden="true"></span>${esc(model.signalSummary || '두 신호는 취약 방향, 한 신호는 평균 수준입니다.')}</p>
+          </div>
+          <div class="guided-map-panel">
+            <p><strong>고양시 44개 행정동</strong><span>${esc(area.dong)} 위치를 먼저 확인합니다.</span></p>
+            ${renderMap(model, area)}
+          </div>
+        </div>
+
+        <details class="guided-disclosure"><summary>근거와 계산 방식 보기</summary><div>${esc(model.methodNote || '공개데이터의 기준일·단위·공간조인 조건은 분석 상세에서 확인할 수 있습니다.')}</div></details>
+        <p class="guided-boundary-note">이 결과는 도입 결정이 아니라 현장조사 순서를 돕는 공개데이터 대리진단입니다.</p>
+        ${actionBar({ previousStep: 1, step: 3, label: '다음: 신호가 얼마나 반복되나요?' })}
+      </section>`;
+  }
+
+  function robustnessPercent(item) {
+    const explicit = Number(item.percent ?? item.ratioPercent);
+    if (Number.isFinite(explicit)) return clamp(explicit, 0, 100);
+    const numerator = Number(item.numerator ?? item.included ?? item.value);
+    const denominator = Number(item.denominator ?? item.total);
+    return denominator > 0 && Number.isFinite(numerator) ? clamp((numerator / denominator) * 100, 0, 100) : 0;
+  }
+
+  function robustnessDisplay(item) {
+    if (item.display || item.valueLabel) return item.display || item.valueLabel;
+    if (item.numerator !== undefined && item.denominator !== undefined) return `${item.numerator} / ${item.denominator}`;
+    return display(item.value, '검증값 연결 대기');
+  }
+
+  function renderRobustness(item, index) {
+    const percent = robustnessPercent(item);
+    const symbol = item.symbol || (percent >= 99.9 ? '=' : '↓');
+    return `
+      <li class="guided-robustness-row">
+        <span class="guided-sequence" aria-hidden="true">${index + 1}</span>
+        <div class="guided-robustness-main">
+          <div><strong>${esc(item.label || item.name || '재검증')}</strong><b>${esc(robustnessDisplay(item))}</b></div>
+          <span class="guided-progress" aria-hidden="true"><i style="--guided-progress:${percent.toFixed(1)}%"></i></span>
+        </div>
+        <span class="guided-robustness-symbol" aria-hidden="true">${esc(symbol)}</span>
+        <p>${esc(item.reading || item.note || '검증 조건에 따른 포함 여부를 확인합니다.')}</p>
+      </li>`;
+  }
+
+  function renderStepThree(model) {
+    const area = selectedArea(model);
+    const checks = normalizeRobustness(model);
+    return `
+      <section class="guided-page" aria-labelledby="guided-title">
+        ${eyebrow(3, '재분석으로 반복 여부를 확인합니다')}
+        <h1 id="guided-title">이 신호는 얼마나 반복되나요?</h1>
+        <p class="guided-lead">${esc(area.dong)}은 여러 분석 조건에서 다시 포함됐지만, 순위와 정책 효과가 확정된 것은 아닙니다.</p>
+        <p class="guided-definition-note"><span aria-hidden="true">i</span><strong>포함 횟수이며 선정확률이 아닙니다.</strong></p>
+
+        ${checks.length ? `<ol class="guided-robustness-list">${checks.map(renderRobustness).join('')}</ol>` : `<div class="guided-data-empty"><strong>재검증 결과를 연결하고 있습니다.</strong><span>후보집합 재현·제한 가중치·전체 경계감사 순서로 표시됩니다.</span></div>`}
+
+        <div class="guided-certainty-split">
+          <div><span class="guided-certainty-icon is-confirmed" aria-hidden="true">✓</span><p><strong>확인된 것</strong><span>${esc(model.confirmedText || '현장조사가 필요한 신호는 반복됩니다.')}</span></p></div>
+          <div><span class="guided-certainty-icon is-open" aria-hidden="true">−</span><p><strong>확정되지 않은 것</strong><span>${esc(model.unconfirmedText || 'DSS 값·내부순위·DRT 효과는 재현되지 않았습니다.')}</span></p></div>
+        </div>
+
+        <details class="guided-disclosure"><summary>전문 재분석 보기</summary><div>${esc(model.robustnessMethodNote || '제한된 가중치 검토와 전체 경계감사는 서로 다른 범위입니다. 같은 확률로 해석하지 않습니다.')}</div></details>
+        ${actionBar({ previousStep: 2, step: 4, label: '다음: 공개데이터가 모르는 것은?' })}
+      </section>`;
+  }
+
+  function normalizeRobustness(model) {
+    if (Array.isArray(model.robustnessChecks) && model.robustnessChecks.length) return model.robustnessChecks;
+    if (Array.isArray(model.robustness) && model.robustness.length) return model.robustness;
+    const rows = [];
+    if (model.candidateSet) {
+      rows.push({
+        label: '후보집합 재현',
+        display: model.candidateSet.display,
+        numerator: model.candidateSet.matchedCount,
+        denominator: model.candidateSet.expectedCount,
+        reading: model.candidateSet.isReproduced ? '제출 후보 집합이 다시 나옴' : '제출 후보 중 일부만 다시 나옴',
+      });
+    }
+    if (model.robustness?.bounded) {
+      rows.push({
+        label: '제한 가중치 검토',
+        display: model.robustness.bounded.display,
+        numerator: model.robustness.bounded.count,
+        denominator: model.robustness.bounded.total,
+        percent: model.robustness.bounded.share * 100,
+        reading: '명시한 범위에서의 포함 횟수',
+      });
+    }
+    if (model.robustness?.boundary) {
+      rows.push({
+        label: '전체 경계감사',
+        display: model.robustness.boundary.display,
+        numerator: model.robustness.boundary.count,
+        denominator: model.robustness.boundary.total,
+        percent: model.robustness.boundary.share * 100,
+        reading: '가중치 제약을 풀었을 때의 포함 횟수',
+      });
+    }
+    return rows;
+  }
+
+  function renderFieldCheck(item, state, key = 'fieldChecks') {
+    const checked = stateIncludes(state, key, item.id);
+    return `
+      <label class="guided-check-row">
+        <input type="checkbox" data-action="guided-toggle-check" data-check-id="${esc(item.id)}"${checkedAttribute(checked)}>
+        <span class="guided-custom-check" aria-hidden="true"></span>
+        <span><strong>${esc(item.label)}</strong><small>${esc(item.hint || item.description || '')}</small></span>
+      </label>`;
+  }
+
+  function renderStepFour(model, state) {
+    const items = asList(model.fieldChecks || model.unknownChecks, DEFAULT_FIELD_CHECKS);
+    return `
+      <section class="guided-page guided-page-checks" aria-labelledby="guided-title">
+        ${eyebrow(4, '공개데이터의 빈칸을 현장 질문으로 바꿉니다')}
+        <h1 id="guided-title">현장에서 무엇을 확인해야 하나요?</h1>
+        <p class="guided-lead">아래 항목은 공개데이터만으로 알 수 없습니다. 조사할 항목을 체크해 주세요.</p>
+
+        <fieldset class="guided-check-fieldset">
+          <legend class="guided-visually-hidden">현장조사 확인 항목</legend>
+          ${items.map((item) => renderFieldCheck(item, state)).join('')}
+        </fieldset>
+
+        <p class="guided-boundary-note">개인 위치·실제 이동경로·정책 효과는 이 화면에 포함하지 않습니다.</p>
+        ${actionBar({ previousStep: 3, step: 5, label: '다음: 어떤 대안을 가를까요?' })}
+      </section>`;
+  }
+
+  function policyAnswer(state, questionId) {
+    const answers = state.policyAnswers || state.alternativeAnswers || state.answers || {};
+    return ['yes', 'no'].includes(answers[questionId]) ? answers[questionId] : 'unknown';
+  }
+
+  function renderAlternativeList(model) {
+    const alternatives = asList(model.alternatives, DEFAULT_ALTERNATIVES);
+    return `
+      <div class="guided-alternative-strip" aria-label="검토할 정책 대안">
+        <p>답변으로 구분할 대안</p>
+        <ul>${alternatives.map((item) => {
+          const label = typeof item === 'string' ? item : item.label || item.name;
+          return `<li><span>${esc(label)}</span><small>미확인</small></li>`;
+        }).join('')}</ul>
+      </div>`;
+  }
+
+  function renderStepFive(model, state) {
+    const questions = asList(model.policyQuestions || model.alternativeQuestions, DEFAULT_POLICY_QUESTIONS);
+    const questionIndex = Math.min(
+      Math.max(0, questions.length - 1),
+      Math.max(0, Number(state.policyQuestionIndex) || 0),
+    );
+    const question = questions[questionIndex];
+    const answer = policyAnswer(state, question.id);
+    const answeredCount = questions.filter((item) => policyAnswer(state, item.id) !== 'unknown').length;
+    const isLast = questionIndex === questions.length - 1;
+    return `
+      <section class="guided-page guided-page-policy" aria-labelledby="guided-title">
+        ${eyebrow(5, '대안별 조사 질문을 하나씩 확인합니다')}
+        <h1 id="guided-title">어떤 대안이 맞는지 무엇을 물어야 하나요?</h1>
+        <p class="guided-lead">지금은 모든 대안이 <strong>미확인</strong>입니다. 답변은 자동 추천이나 점수가 아닙니다.</p>
+
+        <div class="guided-question-progress" aria-label="대안 조사 질문 진행률">
+          <span>질문 ${questionIndex + 1} / ${questions.length}</span>
+          <span>${answeredCount}개 답변 기록</span>
+          <i aria-hidden="true"><b style="--guided-question-progress:${((questionIndex + 1) / questions.length) * 100}%"></b></i>
+        </div>
+
+        <div class="guided-policy-question-list">
+          <fieldset class="guided-policy-question is-current">
+            <legend><span>${questionIndex + 1}</span>${esc(question.text)}</legend>
+            <p>${esc(question.note || '현장에서 담당자와 이용자에게 확인할 질문입니다.')}</p>
+            <div class="guided-answer-options">
+              ${[
+                ['unknown', '아직 모름'],
+                ['yes', '예'],
+                ['no', '아니오'],
+              ].map(([value, label]) => `<label><input type="radio" name="guided-policy-answer-${esc(question.id)}" value="${value}" data-action="guided-policy-answer" data-guided-question="${esc(question.id)}" data-guided-answer="${value}"${checkedAttribute(answer === value)}><span>${label}</span></label>`).join('')}
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="guided-current-alternative">
+          <span>이 질문이 구분하는 대안</span>
+          <strong>${esc(question.alternative || DEFAULT_ALTERNATIVES[questionIndex] || '정책 대안')}</strong>
+          <small>답변만 기록하며 적합도·순위·점수는 계산하지 않습니다.</small>
+        </div>
+        <p class="guided-boundary-note">현장 답변을 모은 뒤에도 교통·복지 담당자가 공동 검토합니다.</p>
+        <div class="guided-action-bar">
+          ${questionIndex > 0
+            ? '<button class="guided-back-link" type="button" data-action="guided-policy-prev"><span aria-hidden="true">←</span> 이전 질문</button>'
+            : '<button class="guided-back-link" type="button" data-action="guided-prev" data-guided-step="4"><span aria-hidden="true">←</span> 이전 단계</button>'}
+          ${isLast
+            ? '<button class="guided-primary-action" type="button" data-action="guided-next" data-guided-step="6"><span>체크리스트 검토하기</span><span aria-hidden="true">→</span></button>'
+            : '<button class="guided-primary-action" type="button" data-action="guided-policy-next"><span>다음 조사 질문</span><span aria-hidden="true">→</span></button>'}
+        </div>
+      </section>`;
+  }
+
+  function renderCompactSignals(model) {
+    const signals = asList(model.confirmedSignals || model.signalSummaryItems);
+    if (!signals.length) return '';
+    return `<ul class="guided-compact-signals">${signals.map((item) => {
+      const label = typeof item === 'string' ? item : item.label || item.name;
+      const tone = typeof item === 'object' && item.tone === 'neutral' ? 'is-neutral' : 'is-signal';
+      return `<li class="${tone}">${esc(label)}</li>`;
+    }).join('')}</ul>`;
+  }
+
+  function renderStepSix(model, state) {
+    const area = selectedArea(model);
+    const items = asList(model.finalChecks || model.fieldChecks || model.unknownChecks, DEFAULT_FIELD_CHECKS);
+    return `
+      <section class="guided-page guided-page-review" aria-labelledby="guided-title">
+        ${eyebrow(6, '근거·한계·질문을 한 파일로 묶습니다')}
+        <h1 id="guided-title">${esc(area.dong)} 현장조사 체크리스트를 저장할까요?</h1>
+        <p class="guided-lead">교통·복지 담당자가 같은 근거와 질문으로 공동검토를 시작합니다.</p>
+
+        <div class="guided-review-layout">
+          <div class="guided-review-document">
+            <section><h2>1. 조사 대상</h2><p><strong>${esc(area.dong)}</strong><span>${esc(area.district)}</span><em>추가 현장조사</em></p></section>
+            <section><h2>2. 공개데이터에서 확인한 신호</h2>${renderCompactSignals(model) || '<p class="guided-inline-empty">신호 요약 연결 대기</p>'}</section>
+            <section><h2>3. 현장에서 확인할 항목</h2><div class="guided-final-checks">${items.map((item) => renderFieldCheck(item, state, 'fieldChecks')).join('')}</div></section>
+            <p class="guided-document-limit">개인 위치·실제 OD·정책 효과는 포함하지 않습니다.</p>
+          </div>
+
+          <div class="guided-review-note">
+            <span aria-hidden="true">i</span>
+            <p><strong>개인정보를 입력받지 않습니다.</strong><small>이 파일에는 구조화된 조사 항목만 저장합니다. 대상자 이름·주소·연락처·건강정보는 기관의 승인된 내부 절차로 별도 관리하세요.</small></p>
+          </div>
+        </div>
+
+        <p class="guided-boundary-note">자유입력란 없이 개인정보가 없는 JSON 파일로 저장됩니다.</p>
+        ${actionBar({ previousStep: 5, action: 'guided-save', step: 6, label: `${area.dong} 현장조사 체크리스트 저장` })}
+      </section>`;
+  }
+
+  function renderStep(step, model, state) {
+    const renderers = [null, renderStepOne, renderStepTwo, renderStepThree, renderStepFour, renderStepFive, renderStepSix];
+    return renderers[step](model, state);
+  }
+
+  function render({ step = 1, model = {}, state = {} } = {}) {
+    const activeStep = clamp(step, 1, STEPS.length);
+    return `
+      <div class="guided-app" data-guided-step="${activeStep}">
+        ${header(model)}
+        <div class="guided-layout">
+          ${stepRail(activeStep, state)}
+          <main class="guided-main" id="app-main" tabindex="-1">
+            ${renderStep(activeStep, model, state)}
+          </main>
+        </div>
+        <footer class="guided-footer"><span aria-hidden="true">i</span><p>${esc(model.footerNote || '공개데이터 대리진단 · 혼합 기준일 · 실제 이용자 위치 미사용')}</p></footer>
+      </div>`;
+  }
+
+  return Object.freeze({ render, STEPS });
+});

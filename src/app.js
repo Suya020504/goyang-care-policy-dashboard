@@ -6,13 +6,15 @@
   const PRO = window.DDOL_PRO_ANALYSIS || null;
   const CHARTS = window.DdolCharts;
   const ENGINE = window.PolicyEngine;
+  const GUIDED = window.DDOL_GUIDED_MODEL;
+  const GUIDED_VIEW = window.DDOL_GUIDED_VIEW;
   const app = document.getElementById('app');
 
-  if (!DATA || !BOUNDARIES || !CHARTS || !ENGINE) {
+  if (!DATA || !BOUNDARIES || !CHARTS || !ENGINE || !GUIDED || !GUIDED_VIEW) {
     app.innerHTML = `
       <main class="fatal">
         <h1>대시보드를 열 수 없습니다.</h1>
-        <p><code>public/data/data.js</code>와 <code>public/data/boundaries.js</code> 생성 여부를 확인해 주세요.</p>
+        <p>데이터와 안내형 화면 파일이 모두 생성됐는지 확인해 주세요.</p>
       </main>`;
     return;
   }
@@ -176,6 +178,8 @@
   }
 
   const STATE_KEY = 'ddol-dashboard-v2-state';
+  const GUIDED_STATE_KEY = 'ddol-dashboard-guided-v1';
+  let guidedStorageAvailable = true;
   prepareDemoState();
   let state = readState();
   let activeSourceId = null;
@@ -324,16 +328,38 @@
   function prepareDemoState() {
     const url = new URL(window.location.href);
     if (url.searchParams.get('demo') !== '1') return;
-    window.localStorage.removeItem(STATE_KEY);
-    url.search = '';
+    try {
+      window.localStorage.removeItem(STATE_KEY);
+      window.localStorage.removeItem(GUIDED_STATE_KEY);
+    } catch (_error) {
+      guidedStorageAvailable = false;
+    }
+    url.searchParams.delete('demo');
     window.history.replaceState({}, '', url);
   }
 
   function readState() {
     const params = new URL(window.location.href).searchParams;
     let stored = {};
+    let guidedStored = {};
     try { stored = JSON.parse(window.localStorage.getItem(STATE_KEY) || '{}'); } catch (_error) { stored = {}; }
-    const requestedCode = params.get('dong') || stored.selectedCode;
+    try {
+      guidedStored = JSON.parse(window.localStorage.getItem(GUIDED_STATE_KEY) || '{}');
+      if (Object.prototype.hasOwnProperty.call(guidedStored, 'note')) {
+        delete guidedStored.note;
+        window.localStorage.setItem(GUIDED_STATE_KEY, JSON.stringify(guidedStored));
+      }
+    } catch (_error) {
+      guidedStored = {};
+      guidedStorageAvailable = false;
+    }
+    const requestedView = params.get('view');
+    const view = requestedView === 'analysis' || requestedView === 'guided'
+      ? requestedView
+      : params.has('stage')
+        ? 'analysis'
+        : 'guided';
+    const requestedCode = params.get('dong') || guidedStored.selectedCode || stored.selectedCode;
     const selected = candidateByCode.get(String(requestedCode)) || candidateByDong.get(requestedCode) || selectedDefault;
     const requestedMapCode = String(stored.mapAreaCode || selected.code);
     const mapArea = areaByCode.get(requestedMapCode) || areaByCode.get(String(selected.code)) || allAreas[0];
@@ -343,8 +369,29 @@
     const mapDistrict = ['전체', '고양시 덕양구', '고양시 일산동구', '고양시 일산서구'].includes(stored.mapDistrict)
       ? stored.mapDistrict
       : '전체';
+    const checklistIds = GUIDED.CHECKLIST_ITEMS.map((item) => item.id);
+    const guidedChecks = Array.isArray(guidedStored.checks)
+      ? guidedStored.checks.filter((id) => checklistIds.includes(id))
+      : [];
+    const guidedAnswers = {
+      visitSubstitution: 'unknown',
+      demandConcentration: 'unknown',
+      phoneReservation: 'unknown',
+      irregularDemand: 'unknown',
+      accessibleVehicle: 'unknown',
+      ...(guidedStored.answers || {}),
+    };
+    const guidedStep = clamp(numberValue(params.get('step') || guidedStored.step || 1), 1, 6);
+    const guidedQuestionIndex = clamp(numberValue(params.get('q') || guidedStored.questionIndex || 0), 0, GUIDED.POLICY_QUESTIONS.length - 1);
     return {
+      view,
       stage: clamp(numberValue(params.get('stage') || stored.stage || 1), 1, 4),
+      guidedStep,
+      guidedVisitedStep: clamp(Math.max(guidedStep, numberValue(guidedStored.visitedStep, guidedStep)), 1, 6),
+      guidedQuestionIndex,
+      guidedChecks,
+      guidedAnswers,
+      guidedSavedAt: null,
       selectedCode: selected.code,
       mapAreaCode: mapArea.code,
       mapMetric,
@@ -371,12 +418,62 @@
   function km(value) { return `${(numberValue(value) / 1000).toFixed(2)}km`; }
   function esc(value) { return CHARTS.escapeHtml(value); }
 
+  function persistState() {
+    const analysisState = {
+      stage: state.stage,
+      selectedCode: state.selectedCode,
+      mapAreaCode: state.mapAreaCode,
+      mapMetric: state.mapMetric,
+      mapDistrict: state.mapDistrict,
+      mapBusPoints: state.mapBusPoints,
+      mapFacilityPoints: state.mapFacilityPoints,
+      claimFilter: state.claimFilter,
+      demand: state.demand,
+      pattern: state.pattern,
+      digital: state.digital,
+      serviceMode: state.serviceMode,
+      vehicles: state.vehicles,
+      wheelchair: state.wheelchair,
+      decisionStatus: state.decisionStatus,
+      decisionReason: state.decisionReason,
+    };
+    const guidedState = {
+      step: state.guidedStep,
+      visitedStep: state.guidedVisitedStep,
+      selectedCode: state.selectedCode,
+      checks: state.guidedChecks,
+      answers: state.guidedAnswers,
+      questionIndex: state.guidedQuestionIndex,
+    };
+    try {
+      window.localStorage.setItem(STATE_KEY, JSON.stringify(analysisState));
+    } catch (_error) {
+      // 분석 상세는 저장 실패 시에도 현재 세션에서 계속 사용할 수 있습니다.
+    }
+    try {
+      window.localStorage.setItem(GUIDED_STATE_KEY, JSON.stringify(guidedState));
+      guidedStorageAvailable = true;
+    } catch (_error) {
+      guidedStorageAvailable = false;
+    }
+  }
+
   function updateState(patch, pushHistory = false, focusMain = false) {
     state = { ...state, ...patch };
-    window.localStorage.setItem(STATE_KEY, JSON.stringify(state));
+    persistState();
     const url = new URL(window.location.href);
-    url.searchParams.set('stage', String(state.stage));
+    url.searchParams.set('view', state.view);
     url.searchParams.set('dong', state.selectedCode);
+    if (state.view === 'guided') {
+      url.searchParams.set('step', String(state.guidedStep));
+      url.searchParams.delete('stage');
+      if (state.guidedStep === 5) url.searchParams.set('q', String(state.guidedQuestionIndex));
+      else url.searchParams.delete('q');
+    } else {
+      url.searchParams.set('stage', String(state.stage));
+      url.searchParams.delete('step');
+      url.searchParams.delete('q');
+    }
     window.history[pushHistory ? 'pushState' : 'replaceState']({}, '', url);
     render();
     if (focusMain) window.setTimeout(() => document.getElementById('app-main')?.focus(), 0);
@@ -390,6 +487,7 @@
           <div class="brand-copy"><strong>닿지 않는 돌봄</strong><span>고양시 교통·복지 정책 사전검토</span></div>
         </div>
         <div class="top-actions">
+          <button class="top-action" data-view="guided" aria-label="단계형 안내로 돌아가기"><span class="button-text">단계형 안내</span></button>
           <span class="offline-badge"><i></i>오프라인 시연</span>
           <button class="top-action" data-action="print" aria-label="현재 화면 인쇄"><span class="button-icon">▣</span><span class="button-text">인쇄</span></button>
           <button class="top-action" data-action="export" aria-label="검토 결과 내보내기"><span class="button-icon">⇩</span><span class="button-text">내보내기</span></button>
@@ -412,6 +510,91 @@
       <button class="stage-button ${state.stage === stage.id ? 'is-active' : ''}" data-stage="${stage.id}" aria-current="${state.stage === stage.id ? 'step' : 'false'}">
         <span class="stage-number">${stage.id}</span><span class="stage-label">${stage.label}</span>
       </button>`).join('');
+  }
+
+  function renderGuidedMap(selectedCode) {
+    const features = BOUNDARIES.features || [];
+    const selectedFeature = features.find((feature) => String(feature.code) === String(selectedCode));
+    const paths = features.map((feature) => {
+      const area = areaByCode.get(String(feature.code));
+      if (!area) return '';
+      const selected = String(feature.code) === String(selectedCode);
+      const candidate = candidateByCode.has(String(feature.code));
+      const attributes = candidate
+        ? `data-guided-dong="${esc(feature.code)}" tabindex="0" role="button" aria-label="${esc(area.dong)} 후보 선택"`
+        : 'aria-hidden="true"';
+      return `<path class="guided-map-path ${selected ? 'is-selected' : ''} ${candidate ? 'is-candidate' : ''}" ${attributes} d="${esc(feature.path)}" fill-rule="evenodd"><title>${esc(area.dong)}</title></path>`;
+    }).join('');
+    const selectedLabel = selectedFeature
+      ? `<g class="guided-map-selected-label" transform="translate(${numberValue(selectedFeature.labelX)} ${numberValue(selectedFeature.labelY)})"><circle r="11"></circle><text y="-18" text-anchor="middle">${esc(selectedArea().dong)}</text></g>`
+      : '';
+    return `
+      <svg class="guided-map-svg" viewBox="${esc(BOUNDARIES.metadata?.viewBox || '0 0 900 660')}" role="group" aria-label="고양시 44개 행정동 후보 지도">
+        <g>${paths}</g>${selectedLabel}
+      </svg>`;
+  }
+
+  function buildGuidedModel() {
+    const model = GUIDED.buildAreaModel(DATA, PRO, state.selectedCode);
+    const signalMetrics = model.signals.map((signal) => ({
+      ...signal,
+      areaDisplay: signal.id === 'nearest-facility' ? km(signal.value) : signal.display,
+      cityDisplay: signal.id === 'nearest-facility' ? km(signal.benchmark) : signal.benchmarkDisplay,
+      definition: signal.id === 'aging-rate'
+        ? '65세 이상 주민등록인구 비율'
+        : signal.id === 'routes-per-stop'
+          ? '정류장별 경유노선 수의 평균'
+          : '100m 격자별 최근접 의료기관 거리 평균',
+    }));
+    const agingHigher = model.signals[0].value > model.signals[0].benchmark;
+    const routesLower = model.signals[1].value < model.signals[1].benchmark;
+    const facilityGapRatio = Math.abs(model.signals[2].value - model.signals[2].benchmark) / Math.max(model.signals[2].benchmark, 1);
+    const mapMarkup = renderGuidedMap(model.selectedArea?.code || state.selectedCode);
+    return {
+      ...model,
+      productSubtitle: '고양시 교통·복지 현장조사 지원',
+      areaCount: allAreas.length,
+      candidateCount: candidates.length,
+      signalMetrics,
+      signalHeadline: `${agingHigher ? '고령 수요는 높고' : '고령 수요는 낮고'}, 버스 연결은 ${routesLower ? '낮게' : '높게'} 관찰됐습니다.`,
+      signalSubheadline: facilityGapRatio <= 0.1
+        ? '의료시설 거리는 시 평균과 비슷합니다. 실제 이동 수요는 현장에서 확인해야 합니다.'
+        : `의료시설 거리는 시 평균보다 ${model.signals[2].value > model.signals[2].benchmark ? '멀게' : '가깝게'} 관찰됐습니다. 실제 이동시간은 아직 모릅니다.`,
+      signalSummary: `${agingHigher ? '고령 수요 취약 신호' : '고령 수요 신호'} · ${routesLower ? '버스 연결 취약 신호' : '버스 연결 공급 신호'} · 의료 접근 ${facilityGapRatio <= 0.1 ? '평균 수준' : '차이 관찰'}`,
+      methodNote: '인구·시설 2026-06-30, 버스 2025-08-25, 행정동 경계 2026-04-01을 결합했습니다. 실제 통행시간은 포함하지 않습니다.',
+      confirmedText: `${model.selectedArea.dong}은 제출 후보집합과 두 가중치 검토 범위에서 반복해 포함됐습니다.`,
+      unconfirmedText: `${model.scoreVerification.interpretation}. DRT 효과·비용은 아직 검증하지 않았습니다.`,
+      robustnessMethodNote: '45개는 분석자가 명시한 제한 범위, 231개는 전체 비음수 simplex 경계감사입니다. 포함 횟수는 확률이 아닙니다.',
+      fieldChecks: GUIDED.CHECKLIST_ITEMS,
+      policyQuestions: GUIDED.POLICY_QUESTIONS,
+      confirmedSignals: [
+        `${model.selectedArea.dong} 고령화율 ${signalMetrics[0].areaDisplay}`,
+        `정류장당 노선 ${signalMetrics[1].areaDisplay}개`,
+        `의료시설 평균거리 ${signalMetrics[2].areaDisplay}`,
+      ],
+      footerNote: '공개데이터 대리진단 · 버스·경계·인구·시설 혼합 기준일 · 실제 이용자 위치 미사용',
+      mapMarkup,
+      mapSvg: mapMarkup,
+    };
+  }
+
+  function renderGuided() {
+    const model = buildGuidedModel();
+    return GUIDED_VIEW.render({
+      step: state.guidedStep,
+      model,
+      state: {
+        ...state,
+        step: state.guidedStep,
+        visitedStep: state.guidedVisitedStep,
+        checks: state.guidedChecks,
+        answers: state.guidedAnswers,
+        policyAnswers: state.guidedAnswers,
+        policyQuestionIndex: state.guidedQuestionIndex,
+        storageAvailable: guidedStorageAvailable,
+        savedAt: state.guidedSavedAt || null,
+      },
+    });
   }
 
   function pageIntro(eyebrow, title, copy, statusTitle, statusCopy) {
@@ -1271,6 +1454,77 @@
       </section>`;
   }
 
+  function guidedStepToAnalysisStage(step = state.guidedStep) {
+    if (step === 2) return 2;
+    if (step === 3) return 3;
+    if (step >= 5) return 4;
+    return 1;
+  }
+
+  function goToGuidedStep(target, pushHistory = true) {
+    const step = clamp(numberValue(target, state.guidedStep), 1, 6);
+    if (step > state.guidedVisitedStep + 1) return;
+    if (state.guidedStep === 4 && step > 4 && state.guidedChecks.length === 0) {
+      showToast('현장에서 확인할 항목을 한 개 이상 선택해 주세요.');
+      return;
+    }
+    const patch = {
+      view: 'guided',
+      guidedStep: step,
+      guidedVisitedStep: Math.max(state.guidedVisitedStep, step),
+      guidedSavedAt: null,
+    };
+    if (state.guidedStep === 4 && step === 5) patch.guidedQuestionIndex = 0;
+    updateState(patch, pushHistory, true);
+  }
+
+  function resetGuided() {
+    try { window.localStorage.removeItem(GUIDED_STATE_KEY); } catch (_error) { guidedStorageAvailable = false; }
+    updateState({
+      view: 'guided',
+      guidedStep: 1,
+      guidedVisitedStep: 1,
+      guidedQuestionIndex: 0,
+      selectedCode: selectedDefault.code,
+      mapAreaCode: selectedDefault.code,
+      guidedChecks: [],
+      guidedAnswers: {
+        visitSubstitution: 'unknown',
+        demandConcentration: 'unknown',
+        phoneReservation: 'unknown',
+        irregularDemand: 'unknown',
+        accessibleVehicle: 'unknown',
+      },
+      guidedSavedAt: null,
+    }, true, true);
+    showToast('현장조사 안내를 처음부터 시작합니다.');
+  }
+
+  function saveGuidedChecklist() {
+    const model = buildGuidedModel();
+    const savedAt = new Date().toISOString();
+    const payload = GUIDED.buildChecklistExport({
+      model,
+      selectedChecks: state.guidedChecks,
+      policyAnswers: state.guidedAnswers,
+      savedAt,
+    });
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `현장조사_체크리스트_${model.selectedArea.dong}_${savedAt.slice(0, 10)}.json`;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    state = { ...state, guidedSavedAt: savedAt };
+    render();
+    showToast(guidedStorageAvailable
+      ? `${model.selectedArea.dong} 현장조사 체크리스트를 저장했습니다.`
+      : '파일은 저장했지만 이 기기에 초안은 남지 않았습니다.');
+  }
+
   function exportReview() {
     const area = selectedArea();
     const result = ENGINE.scoreOptions(policyInput(area));
@@ -1336,8 +1590,10 @@
   }
 
   function resetDemo() {
-    window.localStorage.removeItem(STATE_KEY);
+    try { window.localStorage.removeItem(STATE_KEY); } catch (_error) { /* 현재 세션 상태는 계속 사용 */ }
     state = {
+      ...state,
+      view: 'analysis',
       stage: 1,
       selectedCode: selectedDefault.code,
       mapAreaCode: selectedDefault.code,
@@ -1360,8 +1616,55 @@
   }
 
   function bindEvents() {
+    document.querySelectorAll('[data-view]').forEach((button) => button.addEventListener('click', () => {
+      const view = button.dataset.view === 'analysis' ? 'analysis' : 'guided';
+      const patch = { view };
+      if (view === 'analysis') patch.stage = numberValue(button.dataset.analysisStage, guidedStepToAnalysisStage());
+      updateState(patch, true, true);
+    }));
+    document.querySelectorAll('[data-guided-step]').forEach((button) => button.addEventListener('click', () => {
+      const action = button.dataset.action;
+      if (!button.disabled && ['guided-next', 'guided-prev', 'guided-go-step'].includes(action)) {
+        goToGuidedStep(button.dataset.guidedStep, true);
+      }
+    }));
+    document.querySelectorAll('[data-guided-dong]').forEach((element) => {
+      const selectDong = () => {
+        const code = String(element.dataset.guidedDong);
+        if (!candidateByCode.has(code)) return;
+        updateState({ selectedCode: code, mapAreaCode: code, guidedSavedAt: null });
+      };
+      element.addEventListener('click', selectDong);
+      element.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          selectDong();
+        }
+      });
+    });
+    document.querySelectorAll('[data-guided-field="selectedCode"]').forEach((field) => field.addEventListener('change', () => {
+      const code = String(field.value);
+      if (candidateByCode.has(code)) updateState({ selectedCode: code, mapAreaCode: code, guidedSavedAt: null });
+    }));
+    document.querySelectorAll('input[type="checkbox"][data-check-id]').forEach((field) => field.addEventListener('change', () => {
+      const id = String(field.dataset.checkId);
+      const selected = new Set(state.guidedChecks);
+      if (field.checked) selected.add(id); else selected.delete(id);
+      updateState({ guidedChecks: [...selected], guidedSavedAt: null });
+    }));
+    document.querySelectorAll('[data-guided-question][data-guided-answer]').forEach((button) => button.addEventListener('click', () => {
+      const question = button.dataset.guidedQuestion;
+      const answer = button.dataset.guidedAnswer;
+      updateState({
+        guidedAnswers: { ...state.guidedAnswers, [question]: answer },
+        guidedSavedAt: null,
+      });
+      window.setTimeout(() => document.querySelector(
+        `[data-guided-question="${CSS.escape(question)}"][data-guided-answer="${CSS.escape(answer)}"]`,
+      )?.focus(), 0);
+    }));
     document.querySelectorAll('[data-stage]').forEach((button) => button.addEventListener('click', () => {
-      updateState({ stage: numberValue(button.dataset.stage, 1) }, true, true);
+      updateState({ view: 'analysis', stage: numberValue(button.dataset.stage, 1) }, true, true);
     }));
     document.querySelectorAll('[data-source]').forEach((button) => button.addEventListener('click', () => {
       overlayReturn = { type: 'source', value: button.dataset.source };
@@ -1429,6 +1732,18 @@
       const action = button.dataset.action;
       if (action === 'print') window.print();
       if (action === 'export') exportReview();
+      if (action === 'guided-save' || action === 'save-checklist') saveGuidedChecklist();
+      if (action === 'guided-policy-next') updateState({
+        guidedQuestionIndex: clamp(state.guidedQuestionIndex + 1, 0, GUIDED.POLICY_QUESTIONS.length - 1),
+        guidedSavedAt: null,
+      }, false, true);
+      if (action === 'guided-policy-prev') updateState({
+        guidedQuestionIndex: clamp(state.guidedQuestionIndex - 1, 0, GUIDED.POLICY_QUESTIONS.length - 1),
+        guidedSavedAt: null,
+      }, false, true);
+      if (action === 'guided-print') window.print();
+      if (action === 'guided-reset') resetGuided();
+      if (action === 'open-analysis') updateState({ view: 'analysis', stage: numberValue(button.dataset.analysisStage, guidedStepToAnalysisStage()) }, true, true);
       if (action === 'help') { overlayReturn = { type: 'action', value: 'help' }; helpOpen = true; activeSourceId = null; render(); window.setTimeout(() => document.querySelector('.help-modal .icon-button')?.focus(), 0); }
       if (action === 'close-overlay') closeOverlay();
       if (action === 'reset') resetDemo();
@@ -1458,7 +1773,7 @@
 
   function applyOverlayAccessibility() {
     const open = Boolean(helpOpen || activeSourceId);
-    document.querySelectorAll('.topbar, .stage-wrap, #app-main, .app-footer').forEach((element) => {
+    document.querySelectorAll('.topbar, .guided-app, .stage-wrap, #app-main, .app-footer').forEach((element) => {
       if (open) {
         element.setAttribute('inert', '');
         element.setAttribute('aria-hidden', 'true');
@@ -1486,14 +1801,36 @@
   }
 
   function render() {
-    const renderers = [null, renderOverview, renderCandidates, renderRevalidation, renderPolicy];
-    app.innerHTML = shell(renderers[state.stage]());
+    if (state.view === 'guided') {
+      app.innerHTML = `${renderGuided()}${renderOverlays()}${toastMessage ? `<div class="toast" role="status">${esc(toastMessage)}</div>` : ''}`;
+    } else {
+      const renderers = [null, renderOverview, renderCandidates, renderRevalidation, renderPolicy];
+      app.innerHTML = shell(renderers[state.stage]());
+    }
     bindEvents();
   }
 
   window.addEventListener('popstate', () => {
-    const stage = clamp(numberValue(new URL(window.location.href).searchParams.get('stage'), state.stage), 1, 4);
-    state = { ...state, stage };
+    const params = new URL(window.location.href).searchParams;
+    const requestedView = params.get('view');
+    const view = requestedView === 'analysis' || requestedView === 'guided'
+      ? requestedView
+      : params.has('stage') ? 'analysis' : 'guided';
+    const stage = clamp(numberValue(params.get('stage'), state.stage), 1, 4);
+    const guidedStep = clamp(numberValue(params.get('step'), state.guidedStep), 1, 6);
+    const guidedQuestionIndex = clamp(numberValue(params.get('q'), state.guidedQuestionIndex), 0, GUIDED.POLICY_QUESTIONS.length - 1);
+    const requestedCode = params.get('dong');
+    const selected = candidateByCode.get(String(requestedCode)) || candidateByDong.get(requestedCode) || selectedArea();
+    state = {
+      ...state,
+      view,
+      stage,
+      guidedStep,
+      guidedQuestionIndex,
+      guidedVisitedStep: Math.max(state.guidedVisitedStep, guidedStep),
+      selectedCode: selected.code,
+      mapAreaCode: selected.code,
+    };
     render();
   });
 

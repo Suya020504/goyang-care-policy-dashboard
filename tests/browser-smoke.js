@@ -6,7 +6,7 @@ const { chromium } = require('playwright-core');
 async function main() {
   const root = path.resolve(__dirname, '..');
   const baseUrl = process.env.TEST_URL || pathToFileURL(path.join(root, 'index.html')).href;
-  const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}demo=1`;
+  const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}demo=1&view=analysis`;
   const browser = await chromium.launch({
     headless: true,
     executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || chromium.executablePath(),
@@ -194,7 +194,7 @@ async function main() {
   assert.match(exportedReview.policyRule.note, /단독 정책결정 금지/);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(`${pathToFileURL(path.join(root, 'index.html')).href}?demo=1`, { waitUntil: 'load' });
+  await page.goto(`${pathToFileURL(path.join(root, 'index.html')).href}?demo=1&view=analysis`, { waitUntil: 'load' });
   assert.equal(await page.locator('.administrative-map .map-path').count(), 44);
   const mobileMap = await page.locator('.administrative-map').boundingBox();
   assert.ok(mobileMap && mobileMap.y < 844, `모바일 첫 화면에 GIS 시작점이 보여야 합니다: ${JSON.stringify(mobileMap)}`);
@@ -227,7 +227,7 @@ async function main() {
 
   // 1440px 화면을 브라우저 200%로 확대했을 때의 유효 CSS 폭(720px)과 같은 재배치 조건이다.
   await page.setViewportSize({ width: 720, height: 450 });
-  await page.goto(`${pathToFileURL(path.join(root, 'index.html')).href}?demo=1`, { waitUntil: 'load' });
+  await page.goto(`${pathToFileURL(path.join(root, 'index.html')).href}?demo=1&view=analysis`, { waitUntil: 'load' });
   const reflowAt200Percent = {};
   for (const stage of [1, 2, 3, 4]) {
     await page.locator(`[data-stage="${stage}"]`).first().click();

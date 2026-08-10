@@ -1,0 +1,383 @@
+(function initGuidedModel(root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  root.DDOL_GUIDED_MODEL = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function createGuidedModel() {
+  'use strict';
+
+  const DEFAULT_DONG_CODE = '4128163000';
+
+  const STEPS = Object.freeze([
+    Object.freeze({
+      id: 'decision-scope',
+      number: 1,
+      title: '판단 질문',
+      summary: '정책 도입지가 아니라 현장조사를 먼저 검토할 후보를 살펴봅니다.',
+    }),
+    Object.freeze({
+      id: 'haengju-signals',
+      number: 2,
+      title: '행주동 신호',
+      summary: '행주동의 고령수요, 버스 공급, 의료시설 거리 신호를 도시 기준과 비교합니다.',
+    }),
+    Object.freeze({
+      id: 'evidence-confidence',
+      number: 3,
+      title: '근거 확실성',
+      summary: '후보집합 재현, DSS 불일치, 가중치 민감도를 한 단계씩 구분해 읽습니다.',
+    }),
+    Object.freeze({
+      id: 'evidence-gaps',
+      number: 4,
+      title: '확인할 빈칸',
+      summary: '공개데이터에 없는 실제 이동수요와 운영조건을 현장확인 과제로 남깁니다.',
+    }),
+    Object.freeze({
+      id: 'alternative-research',
+      number: 5,
+      title: '대안별 조사',
+      summary: 'DRT를 자동 추천하지 않고 교통·복지 대안별로 필요한 조사 항목을 비교합니다.',
+    }),
+    Object.freeze({
+      id: 'field-checklist',
+      number: 6,
+      title: '체크리스트 저장',
+      summary: '확인할 항목을 저장해 담당자가 현장조사와 사람 검토를 이어갑니다.',
+    }),
+  ]);
+
+  const CHECKLIST_ITEMS = Object.freeze([
+    Object.freeze({
+      id: 'anonymous-demand',
+      label: '주요 이용 서비스와 목적지 유형',
+      description: '개인을 식별하지 않는 집계 단위로 서비스와 목적지 유형을 확인합니다.',
+    }),
+    Object.freeze({
+      id: 'travel-pattern',
+      label: '이용 빈도·시간대·방향의 집중 여부',
+      description: '실제 이용패턴은 현재 공개 대리분석에 포함되지 않았습니다.',
+    }),
+    Object.freeze({
+      id: 'call-access',
+      label: '앱·전화 호출 가능성과 미이용 사유',
+      description: '호출수단 접근성과 서비스를 이용하지 못하는 이유를 함께 확인합니다.',
+    }),
+    Object.freeze({
+      id: 'boarding-support',
+      label: '휠체어·승하차·동행지원 필요',
+      description: '차량 접근성뿐 아니라 승하차와 동행에 필요한 지원을 확인합니다.',
+    }),
+    Object.freeze({
+      id: 'visit-capacity',
+      label: '방문서비스 대체 가능성과 제공기관 수용력',
+      description: '이동 지원 대신 방문 제공이 가능한 서비스와 기관 수용력을 확인합니다.',
+    }),
+    Object.freeze({
+      id: 'operations-data',
+      label: '차량·운영인력·호출·대기·OD·비용 자료 확보 가능성',
+      description: '현재 공개 대리분석에 없는 운영자료를 어느 부서에서 확보할지 확인합니다.',
+    }),
+  ]);
+
+  const POLICY_QUESTIONS = Object.freeze([
+    Object.freeze({
+      id: 'visitSubstitution',
+      text: '이동 대신 방문서비스로 제공할 수 있나요?',
+      note: '제공기관의 서비스 범위와 수용력을 함께 확인합니다.',
+      alternative: '방문서비스 강화',
+    }),
+    Object.freeze({
+      id: 'demandConcentration',
+      text: '수요가 특정 시간대와 방향에 모이나요?',
+      note: '집중 수요는 고정노선이나 복지셔틀 검토 근거가 됩니다.',
+      alternative: '고정노선·복지셔틀',
+    }),
+    Object.freeze({
+      id: 'phoneReservation',
+      text: '앱 호출이 어려워 전화예약이 필요한가요?',
+      note: '디지털 접근성과 상담원 연결 조건을 확인합니다.',
+      alternative: '전화예약형 이동지원',
+    }),
+    Object.freeze({
+      id: 'irregularDemand',
+      text: '수요가 적고 시간·목적지가 분산되어 있나요?',
+      note: '실제 호출과 이동패턴을 확보한 뒤 판단합니다.',
+      alternative: '택시·바우처',
+    }),
+    Object.freeze({
+      id: 'accessibleVehicle',
+      text: '휠체어·승하차·동행지원 차량이 필요한가요?',
+      note: '필요 차량과 돌봄 인력 조건이 사업 대안을 가릅니다.',
+      alternative: 'DRT 파일럿 조사',
+    }),
+  ]);
+
+  function finite(value, fallback = 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  function formatPercent(value) {
+    return `${(finite(value) * 100).toFixed(1)}%`;
+  }
+
+  function formatFixed(value, digits, suffix = '') {
+    return `${finite(value).toFixed(digits)}${suffix}`;
+  }
+
+  function comparisonDirection(value, benchmark, higherMeaning, lowerMeaning) {
+    const current = finite(value);
+    const city = finite(benchmark);
+    if (Math.abs(current - city) < 1e-12) return '고양시 기준과 비슷함';
+    return current > city ? higherMeaning : lowerMeaning;
+  }
+
+  function candidateRows(data) {
+    const supplied = Array.isArray(data?.candidates) ? data.candidates : [];
+    const derived = Array.isArray(data?.areas) ? data.areas.filter((area) => area?.candidate) : [];
+    return (supplied.length ? supplied : derived).filter((area) => area && area.code && area.dong);
+  }
+
+  function findCandidate(data, requestedCode) {
+    const candidates = candidateRows(data);
+    const fallback = candidates.find((area) => String(area.code) === DEFAULT_DONG_CODE);
+    if (!fallback) throw new TypeError('후보 데이터에서 기본 행주동을 찾을 수 없습니다.');
+    const selected = candidates.find((area) => String(area.code) === String(requestedCode));
+    return { candidates, selected: selected || fallback, usedFallback: !selected };
+  }
+
+  function findByDong(rows, dong) {
+    return (Array.isArray(rows) ? rows : []).find((row) => row?.dong === dong) || null;
+  }
+
+  function findByCodeOrDong(rows, area) {
+    const source = Array.isArray(rows) ? rows : [];
+    return source.find((row) => String(row?.code) === String(area.code))
+      || source.find((row) => row?.dong === area.dong)
+      || null;
+  }
+
+  function signal(id, label, value, benchmark, display, benchmarkDisplay, direction) {
+    return Object.freeze({
+      id,
+      label,
+      value,
+      benchmark,
+      display,
+      benchmarkDisplay,
+      direction,
+    });
+  }
+
+  function inclusionSummary(row, scenarioCount) {
+    const total = finite(scenarioCount);
+    const count = finite(row?.count);
+    return Object.freeze({
+      count,
+      total,
+      display: `${count}/${total}`,
+      share: total ? count / total : 0,
+      minRank: row?.minRank ?? null,
+      medianRank: row?.medianRank ?? null,
+      maxRank: row?.maxRank ?? null,
+    });
+  }
+
+  function buildAreaModel(data, pro, code = DEFAULT_DONG_CODE) {
+    if (!data || !pro) throw new TypeError('안내형 모델에는 DATA와 PRO가 모두 필요합니다.');
+
+    const { candidates, selected, usedFallback } = findCandidate(data, code);
+    const city = data.city || {};
+    const baseline = pro.baseline || {};
+    const weights = pro.weightSensitivity || {};
+    const boundaryAudit = weights.boundaryAudit || {};
+    const comparison = findByDong(data.candidateComparisons, selected.dong);
+    const rankComparison = findByDong(data.rankComparisons, selected.dong);
+    const boundedRow = findByCodeOrDong(weights.inclusionRows, selected);
+    const boundaryRow = findByCodeOrDong(boundaryAudit.inclusionRows, selected);
+
+    const baselineDongs = Array.isArray(baseline.candidateDongs) ? baseline.candidateDongs : [];
+    const candidateDongs = candidates.map((area) => area.dong);
+    const expectedCandidateCount = finite(
+      baseline.candidateCount,
+      baselineDongs.length || finite(city.candidateCount, candidates.length),
+    );
+    const matchedCandidateCount = baselineDongs.length
+      ? candidateDongs.filter((dong) => baselineDongs.includes(dong)).length
+      : Math.min(candidates.length, expectedCandidateCount);
+
+    const dssPoster = comparison?.posterDss ?? selected.posterDss ?? null;
+    const dssReproduced = comparison?.reproducedDss ?? selected.dssReproduced ?? null;
+    const dssMatches = dssPoster !== null && dssReproduced !== null
+      ? Math.abs(finite(dssPoster) - finite(dssReproduced)) < 1e-12
+      : null;
+    const rankMatches = rankComparison
+      ? rankComparison.posterRank === rankComparison.reproducedProxyRank
+      : null;
+
+    const signals = Object.freeze([
+      signal(
+        'aging-rate',
+        '고령화율',
+        finite(selected.agingRate),
+        finite(city.agingRate),
+        formatPercent(selected.agingRate),
+        formatPercent(city.agingRate),
+        comparisonDirection(selected.agingRate, city.agingRate, '고양시 기준보다 높음', '고양시 기준보다 낮음'),
+      ),
+      signal(
+        'routes-per-stop',
+        '정류장당 경유노선',
+        finite(selected.routesPerStop),
+        finite(city.routesPerStop),
+        formatFixed(selected.routesPerStop, 2),
+        formatFixed(city.routesPerStop, 2),
+        comparisonDirection(selected.routesPerStop, city.routesPerStop, '고양시 기준보다 많음', '고양시 기준보다 적음'),
+      ),
+      signal(
+        'nearest-facility',
+        '의료시설 평균 최근접거리',
+        finite(selected.nearestFacilityM),
+        finite(city.nearestFacilityMeanM),
+        formatFixed(selected.nearestFacilityM, 1, 'm'),
+        formatFixed(city.nearestFacilityMeanM, 1, 'm'),
+        comparisonDirection(selected.nearestFacilityM, city.nearestFacilityMeanM, '고양시 기준보다 멂', '고양시 기준보다 가까움'),
+      ),
+    ]);
+
+    return Object.freeze({
+      steps: STEPS,
+      decision: Object.freeze({
+        scope: '현장조사 우선검토',
+        notice: '정책 도입 확정 아님',
+        question: '이 후보를 현장조사 대상으로 먼저 검토할 근거가 있는가?',
+      }),
+      candidates: Object.freeze(candidates.map((area) => Object.freeze({
+        code: String(area.code),
+        district: area.district,
+        dong: area.dong,
+      }))),
+      policyQuestions: POLICY_QUESTIONS,
+      fieldChecks: CHECKLIST_ITEMS,
+      selectedArea: Object.freeze({
+        code: String(selected.code),
+        district: selected.district,
+        dong: selected.dong,
+      }),
+      areaMetrics: Object.freeze({
+        population: finite(selected.population),
+        elderly65: finite(selected.elderly65),
+        single70: finite(selected.single70),
+        agingRate: finite(selected.agingRate),
+        stops: finite(selected.stops),
+        routesPerStop: finite(selected.routesPerStop),
+        nearestFacilityM: finite(selected.nearestFacilityM),
+        cag: finite(selected.cag),
+        dssReproduced: dssReproduced === null ? null : finite(dssReproduced),
+        posterDss: dssPoster === null ? null : finite(dssPoster),
+        posterRank: rankComparison?.posterRank ?? selected.posterRank ?? null,
+        reproducedProxyRank: rankComparison?.reproducedProxyRank ?? null,
+      }),
+      usedFallback,
+      signals,
+      candidateSet: Object.freeze({
+        matchedCount: matchedCandidateCount,
+        expectedCount: expectedCandidateCount,
+        display: `${matchedCandidateCount}/${expectedCandidateCount}`,
+        isReproduced: matchedCandidateCount === expectedCandidateCount,
+        interpretation: '후보집합 일치는 점수와 내부순위까지 같다는 뜻이 아닙니다.',
+      }),
+      scoreVerification: Object.freeze({
+        status: dssMatches === false || rankMatches === false ? 'mismatch' : 'match',
+        dss: Object.freeze({
+          poster: dssPoster,
+          reproduced: dssReproduced,
+          difference: comparison?.dssDifference ?? (
+            dssPoster !== null && dssReproduced !== null ? finite(dssReproduced) - finite(dssPoster) : null
+          ),
+          matches: dssMatches,
+        }),
+        internalRank: Object.freeze({
+          poster: rankComparison?.posterRank ?? selected.posterRank ?? null,
+          reproduced: rankComparison?.reproducedProxyRank ?? null,
+          difference: rankComparison?.difference ?? null,
+          matches: rankMatches,
+        }),
+        interpretation: 'DSS 값과 후보 내부순위 불일치',
+      }),
+      robustness: Object.freeze({
+        bounded: inclusionSummary(boundedRow, weights.scenarioCount),
+        boundary: inclusionSummary(boundaryRow, boundaryAudit.scenarioCount),
+        inclusionIsProbability: false,
+        interpretation: '포함 횟수는 선정확률이 아니라 가중치 민감도 진단입니다.',
+      }),
+      dataBoundary: Object.freeze({
+        excludes: Object.freeze(['개인정보', '실제 출발지·목적지 자료', '자동 정책추천']),
+        interpretation: '공개데이터 대리신호만으로 정책을 확정하지 않고 담당자가 현장을 확인합니다.',
+      }),
+      sourceSnapshot: Object.freeze({
+        analysis: data.metadata?.analysisSnapshot ?? null,
+        populationDate: data.metadata?.populationDate ?? null,
+        facilityDate: data.metadata?.facilityDate ?? null,
+        busDate: data.metadata?.busDate ?? null,
+        proRunId: pro.metadata?.analysisRunId ?? null,
+      }),
+    });
+  }
+
+  function normalizeSavedAt(savedAt) {
+    const date = savedAt instanceof Date ? savedAt : new Date(savedAt ?? Date.now());
+    if (Number.isNaN(date.getTime())) throw new TypeError('savedAt은 유효한 날짜여야 합니다.');
+    return date.toISOString();
+  }
+
+  function buildChecklistExport({ model, selectedChecks = [], policyAnswers = {}, savedAt } = {}) {
+    if (!model?.selectedArea) throw new TypeError('체크리스트 저장에는 buildAreaModel 결과가 필요합니다.');
+    const selectedIds = new Set((Array.isArray(selectedChecks) ? selectedChecks : [])
+      .map((item) => (typeof item === 'string' ? item : item?.id))
+      .filter(Boolean));
+
+    return {
+      schemaVersion: 'field-checklist-v1',
+      savedAt: normalizeSavedAt(savedAt),
+      decisionScope: '현장조사 우선검토',
+      decisionNotice: '정책 도입 확정 아님',
+      area: {
+        code: model.selectedArea.code,
+        district: model.selectedArea.district,
+        dong: model.selectedArea.dong,
+      },
+      evidenceSnapshot: {
+        candidateSet: model.candidateSet.display,
+        scoreVerification: model.scoreVerification.status,
+        boundedSensitivity: model.robustness.bounded.display,
+        boundaryAudit: model.robustness.boundary.display,
+        inclusionIsProbability: false,
+      },
+      fieldChecks: CHECKLIST_ITEMS.map((item) => ({
+        id: item.id,
+        label: item.label,
+        checked: selectedIds.has(item.id),
+      })),
+      alternativeQuestions: POLICY_QUESTIONS.map((item) => ({
+        id: item.id,
+        question: item.text,
+        alternative: item.alternative,
+        answer: ['yes', 'no'].includes(policyAnswers?.[item.id]) ? policyAnswers[item.id] : 'unknown',
+      })),
+      humanReview: {
+        status: 'investigate',
+        notice: '개인정보 입력 없이 교통·복지 담당자가 공동 검토',
+      },
+    };
+  }
+
+  return {
+    STEPS,
+    DEFAULT_DONG_CODE,
+    CHECKLIST_ITEMS,
+    POLICY_QUESTIONS,
+    buildAreaModel,
+    buildChecklistExport,
+  };
+});
