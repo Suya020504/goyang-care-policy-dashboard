@@ -92,8 +92,16 @@ async function main() {
   await goNext(page);
   assert.equal(await page.locator('.guided-check-row input[type="checkbox"]').count(), 6);
   assert.equal(await page.locator('.guided-check-row input[type="checkbox"]:checked').count(), 0);
+  // 구석 토스트를 폐기하고, 사용자의 시선이 있는 자리에 상시 오류 슬롯을 둔다.
+  // 화면을 다시 그리지 않으므로 방금 누른 버튼의 포커스가 유지되어야 한다.
+  await page.locator('.guided-primary-action').focus();
   await goNext(page);
-  assert.match(await page.locator('.toast').innerText(), /한 개 이상 선택/);
+  const slot = page.locator('.guided-error-slot');
+  assert.match(await slot.innerText(), /한 개 이상 골라 주세요/);
+  assert.ok(parseFloat(await slot.evaluate((n) => getComputedStyle(n).fontSize)) >= 18);
+  assert.equal(await slot.getAttribute('aria-live'), 'polite');
+  assert.ok(await page.evaluate(() => document.activeElement === document.querySelector('.guided-primary-action')));
+  assert.equal(await page.locator('.toast').count(), 0);
   assert.match(page.url(), /step=4/);
   await page.locator('.guided-check-row input[type="checkbox"]').nth(0).check();
   await page.locator('.guided-check-row input[type="checkbox"]').nth(3).check();

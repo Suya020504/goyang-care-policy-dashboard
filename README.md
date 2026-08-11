@@ -69,9 +69,9 @@ python -m http.server 4173
 - 관객 화면: `presentation/index.html`
 - 발표자 대본·대조 화면: `presenter/index.html`
 - 특정 슬라이드 직접 열기: `presentation/index.html?slide=11`
-- 발표자 화면 특정 슬라이드: `presenter/index.html?slide=14`
+- 발표자 화면 특정 슬라이드: `presenter/index.html?slide=15` (시연 큐가 있는 장)
 
-관객 화면은 15장 16:9 덱이며 화살표·Home/End·전체화면·인쇄/PDF를 지원합니다. 발표자 화면은 관객 슬라이드와 별도 대본을 나란히 보여 주며, 본 발표 12분·화면 전환 1분·MVP 2분의 진행 시간을 계산합니다. 관객용 `presentation/**`에는 대본 데이터가 포함되지 않습니다.
+관객 화면은 28장 16:9 덱(본편 17장 + 질의응답용 부록 11장, A0~A10)이며 화살표·Home/End·전체화면·인쇄/PDF를 지원합니다. 부록 A0가 질문 인덱스라 번호만 부르면 해당 장으로 바로 넘어갑니다. 발표자 화면은 관객 슬라이드와 별도 대본을 나란히 보여 주며, 본편 635초·화면 전환 60초·MVP 시연 110초의 진행 시간을 계산합니다. 관객용 `presentation/**`에는 대본 데이터가 포함되지 않습니다.
 
 ## 테스트
 

@@ -1329,3 +1329,195 @@ svg text {
   .deck-progress,
   .skip-link { display: none !important; }
 }
+
+/* ============================================================
+   무대 판독 오버레이  (2026-08-11)
+   덱은 1600x900 고정 캔버스다. 1920px 프로젝터에서 x1.2, 1440px 노트북에서 x0.9로
+   렌더되므로, 캔버스 위 18px 미만은 뒷자리에서 사실상 읽히지 않는다.
+   근거: 팀 내부 접근성·판독성 검토 결과(비공개 문서)
+   되돌리려면 이 블록만 삭제한다.
+   ============================================================ */
+
+/* 차트 안 글자 — 축·범례·주석이 14~17px에 있었다 */
+.slide svg text { font-size: 19px; }
+.slide svg text.is-figure,
+.slide svg text.chart-value { font-size: 26px; font-weight: 800; }
+
+/* 출처줄 — 근거 표시는 발표의 핵심 주장이므로 읽혀야 한다 */
+.slide .source-line { font-size: 18px; }
+
+/* 슬라이드 번호 */
+.slide .slide-number { font-size: 20px; }
+
+/* 본문 최소 바닥 */
+.slide p, .slide li, .slide span, .slide small, .slide b, .slide strong {
+  font-size: max(1em, 19px);
+}
+.slide .semantic-caution { font-size: 20px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .slide, .slide * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+
+/* --- 대비 교정: 흰 배경(#f7faf9) 기준 4.5:1 확보 --- */
+/* coral #e45f47 은 3.32:1. '재현 안 됨'·'≠' 같은 이 발표의 핵심 구분 기호에 쓰이므로
+   경고 계열 의미를 유지한 채 명도만 내린다. */
+:root {
+  --coral: #c0392b;   /* 5.11:1 (흰 위 5.44:1) */
+  --amber: #8a5600;   /* 6.24:1 */
+}
+.slide .source-line { color: #48555c; }        /* 6.5:1 */
+.slide .pipeline-arrow,
+.slide i { color: #4a5a63; }                   /* 6.1:1 */
+.slide .not-equal,
+.slide .map-not-equal { color: #c0392b; }
+
+/* dt·dd·span이 16px에 남아 있었다. 위 규칙보다 특이도를 올려 바닥을 적용한다.
+   슬라이드 번호는 표지처럼 어두운 배경 슬라이드가 있어 색을 일괄 지정하지 않는다. */
+main .slide dt,
+main .slide dd,
+main .slide span,
+main .slide small,
+main .slide li,
+main .slide p { font-size: max(1em, 19px); }
+
+/* 밝은 배경 슬라이드에서만 보조 색을 올린다 */
+.slide:not(.slide-title):not(.slide-closing) .slide-number { color: #5a6b73; }
+/* 표지는 배경이 어두워 기본 slide-number 색이 3.12:1로 떨어진다 */
+.slide.slide-title .slide-number,
+.slide.slide-closing .slide-number { color: rgba(255, 255, 255, 0.86); }
+
+/* ============================================================
+   레이아웃 구조 교정 (2026-08-11)
+   원인 ① .source-line 이 position:absolute 로 본문 위에 떠 있어,
+          내용이 길어지면 마지막 문단을 덮었다.
+   원인 ② .truth-strip 라벨 칸이 112px 고정이라 긴 라벨이 2~3줄로 깨졌다.
+   해결: 활성 슬라이드를 세로 flex 로 만들고 출처줄을 흐름 안에 되돌린다.
+   ============================================================ */
+
+.slide.is-active {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 30px;
+}
+
+/* 헤더와 출처줄 사이가 본문 영역. 넘치면 이 안에서만 줄어든다. */
+.slide.is-active > *:not(.slide-header):not(.source-line):not(.slide-number) {
+  min-height: 0;
+  flex: 0 1 auto;
+}
+
+.slide.is-active > .source-line {
+  position: static;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  margin-top: auto;          /* 항상 바닥에 붙는다 */
+  padding-right: 74px;       /* 슬라이드 번호 자리 확보 */
+  flex: 0 0 auto;
+}
+
+/* 라벨 칸은 글자 길이에 맞춘다. 줄바꿈으로 깨지지 않게 한다. */
+.truth-strip {
+  grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
+  gap: 14px 18px;
+  align-items: start;
+}
+.truth-strip span {
+  white-space: nowrap;
+  align-self: center;
+  border-radius: 4px;
+}
+.truth-strip strong { min-width: 0; overflow-wrap: anywhere; }
+
+/* 파이프라인 카드 안 설명이 카드 밖으로 나가지 않게 */
+.analysis-pipeline { align-items: stretch; }
+.analysis-pipeline .candidate-output,
+.analysis-pipeline .layer-node { overflow: visible; }
+.analysis-pipeline .candidate-output small {
+  display: block;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+
+/* --- 카드 내부 겹침 방지 정규화 ---
+   .question-old/.question-new 는 원래 정해진 길이의 문구에 맞춰 만들어졌다.
+   제목이 두 줄이 되면 아래 문구를 덮었다. 세로 흐름으로 되돌린다. */
+.question-old,
+.question-new {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: flex-start;
+  padding: 34px 40px;
+}
+.question-old > *,
+.question-new > * { position: static; margin: 0; }
+.question-old h3,
+.question-new h3 { font-size: 32px; line-height: 1.25; overflow-wrap: anywhere; }
+.question-old small,
+.question-new small { margin-top: auto; padding-top: 8px; }
+.question-old .question-tag,
+.question-new .question-tag { align-self: flex-start; white-space: nowrap; }
+.question-shift { min-height: 0; gap: 24px; }
+
+/* 지도가 없는 슬라이드에서 쓰는 범례는 흐름 안에 둔다 */
+.map-legend.is-inline {
+  position: static;
+  transform: none;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  margin-top: 18px;
+  padding: 12px 0 0;
+  background: transparent;
+}
+
+/* thesis-line 이 앞 요소와 붙어 겹치지 않게 최소 간격 보장 */
+.thesis-line { min-height: 0; margin-top: 22px; }
+
+/* small 이 position:absolute; bottom:35px 로 고정돼 있어 제목이 두 줄이 되면 덮였다.
+   흐름 안으로 되돌린다. (앞선 `> *` 규칙은 특이도가 낮아 적용되지 않았다) */
+.question-old small,
+.question-new small {
+  position: static;
+  left: auto;
+  bottom: auto;
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+/* 지도 범례는 오버레이가 아니라 흐름 안에 둔다.
+   출처줄이 흐름으로 바뀌면서 bottom:66px 오버레이와 충돌했다. */
+.map-legend {
+  position: static;
+  transform: none;
+  align-self: flex-start;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+  margin-top: 14px;
+  padding: 10px 0 0;
+  background: transparent;
+}
+/* 파이프라인 카드 안 설명이 카드 폭을 넘지 않게 */
+.analysis-pipeline .candidate-output { padding: 18px 16px; text-align: center; }
+.analysis-pipeline .candidate-output small { line-height: 1.4; overflow-wrap: anywhere; }
+
+/* 기본 .analysis-pipeline 은 7칸 고정(…78px…)이라 다섯 칸짜리 절차에는 맞지 않는다.
+   다섯 번째 카드가 78px 화살표 칸에 들어가 글자가 세로로 쌓였다. */
+.analysis-pipeline.is-steps {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  min-height: 0;
+  align-items: stretch;
+}
+.analysis-pipeline.is-steps > * { min-width: 0; }
+.analysis-pipeline.is-steps .layer-node,
+.analysis-pipeline.is-steps .candidate-output {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 22px 18px; text-align: center;
+}
+.analysis-pipeline.is-steps strong { white-space: nowrap; }
+
+/* 8장 산출 순서: 마지막 수식 띠는 전체 폭을 쓴다 */
+.analysis-pipeline .formula-band { grid-column: 1 / -1; }

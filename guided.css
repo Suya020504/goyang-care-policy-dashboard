@@ -1502,3 +1502,223 @@
     padding: 0;
   }
 }
+
+/* ============================================================
+   접근성·무대 판독 오버레이  (2026-08-11)
+   근거: 팀 내부 접근성·판독성 검토 결과(비공개 문서)
+   설계 원칙: "Accessible & Ethical" — 고대비, 큰 글자, 색 단독 인코딩 금지.
+   기존 규칙을 지우지 않고 뒤에서 덮어쓴다. 되돌리려면 이 블록만 삭제한다.
+   ============================================================ */
+
+.guided-app {
+  /* 타이포 스케일 — 1440px 투사 기준 본문 24px */
+  --fs-hero: clamp(32px, 3.19vw, 64px);
+  --fs-headline: clamp(26px, 2.22vw, 46px);
+  --fs-figure: clamp(28px, 2.22vw, 46px);
+  --fs-body: clamp(19px, 1.67vw, 34px);
+  --fs-support: clamp(18px, 1.45vw, 28px);
+  --fs-rule: clamp(18px, 1.30vw, 25px);
+  --fs-meta: clamp(16px, 1.15vw, 22px);
+
+  /* 계열 색 — teal(3.93:1, AA 미달) 대체 */
+  --guided-city: #334155;        /* 흰 배경 10.35:1 */
+  --guided-focus: #0f172a;       /* 흰 배경 16.7:1 */
+  --guided-line-strong: #7d8ba1; /* 미체크 테두리 3.9:1 */
+  --guided-hatch: rgba(51, 65, 85, 0.20);
+
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+
+/* 빗금 — 확정되지 않은 것을 색 없이 표시 */
+.guided-app .is-open,
+.guided-app .guided-open-band {
+  background-image: repeating-linear-gradient(
+    45deg, transparent, transparent 5px,
+    var(--guided-hatch) 5px, var(--guided-hatch) 6px);
+  border: 2px dashed var(--guided-line-strong);
+}
+
+/* --- 18px 미만 텍스트 제거 --- */
+.guided-app .guided-signal-reading,
+.guided-app .guided-certainty-split p span,
+.guided-app .guided-robustness-row > p,
+.guided-app .guided-check-row strong { font-size: var(--fs-body); }
+
+.guided-app .guided-definition-note,
+.guided-app .guided-signal-values dt,
+.guided-app .guided-eyebrow,
+.guided-app .guided-rail-title,
+.guided-app .guided-step-label { font-size: var(--fs-support); }
+
+.guided-app .guided-disclosure,
+.guided-app .guided-brand span,
+.guided-app footer { font-size: var(--fs-meta); }
+
+.guided-app .guided-alternative-strip small,
+.guided-app .guided-step-short { font-size: var(--fs-meta); }
+
+/* --- 지표: 크기·굵기·색 세 채널로 계열 구분 --- */
+.guided-app .guided-signal-values dd {
+  font-size: var(--fs-figure);
+  font-weight: 900;
+  color: var(--guided-cobalt);
+}
+.guided-app .guided-signal-values dd.is-city {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--guided-city);
+}
+/* 범례 표식도 형태로 구분 — 채움 사각 vs 빈 사각 */
+.guided-app .guided-signal-legend > *:first-child::before { background: var(--guided-cobalt); border: 2px solid var(--guided-cobalt); }
+.guided-app .guided-signal-legend > *:last-child::before { background: transparent; border: 2px solid var(--guided-city); }
+
+/* --- 큰 수치 --- */
+.guided-app .guided-robustness-main b { font-size: var(--fs-figure); font-weight: 900; }
+
+/* --- 포커스 링: navy + 흰 분리링 --- */
+.guided-app :where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid var(--guided-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px #fff;
+  border-radius: 4px;
+}
+
+/* --- 체크박스: 색 말고 형태로 --- */
+.guided-app .guided-check-row input[type="checkbox"] {
+  width: 28px; height: 28px;
+  accent-color: var(--guided-cobalt);
+  border: 3px solid var(--guided-line-strong);
+}
+.guided-app .guided-check-row { min-height: 56px; }
+.guided-app .guided-check-row:has(input:checked) {
+  background: var(--guided-blue-soft);
+  box-shadow: inset 4px 0 0 var(--guided-cobalt);
+  font-weight: 800;
+}
+
+/* --- 답변 선택: 글리프 + 굵기 --- */
+.guided-app .guided-answer-options input:checked + span {
+  font-weight: 900;
+  border-width: 3px;
+}
+.guided-app .guided-answer-options input:checked + span::before {
+  content: "\2713\00a0";
+  font-weight: 900;
+}
+
+/* --- 지도: 후보를 테두리로 구분(색 단독 금지) --- */
+.guided-app .guided-map-path { fill: #e9edf2; stroke: #b3bfd0; stroke-width: 1; }
+.guided-app .guided-map-path.is-candidate {
+  fill: #cfe1ff;
+  stroke: var(--guided-cobalt);
+  stroke-width: 2.4;
+}
+.guided-app .guided-map-path.is-selected {
+  fill: var(--guided-cobalt);
+  stroke: var(--guided-focus);
+  stroke-width: 3;
+}
+
+/* --- 오류 슬롯: 조용한 차단을 대체 --- */
+.guided-app .guided-error-slot {
+  min-height: 0;
+  margin: 0 0 14px;
+  font-size: var(--fs-rule);
+  font-weight: 800;
+  color: #a4161a;
+}
+.guided-app .guided-error-slot:not(:empty) {
+  padding: 12px 16px;
+  border-left: 6px solid #a4161a;
+  background: #fdf0f0;
+  border-radius: 4px;
+}
+.guided-app .guided-rule-line {
+  margin: 0 0 12px;
+  font-size: var(--fs-rule);
+  color: var(--guided-ink);
+}
+
+/* --- 비활성 버튼: 색 말고 상태를 명시 --- */
+.guided-app .guided-primary-action[aria-disabled="true"] {
+  background: #e3e8ef;
+  color: #56617a;
+  border: 2px solid var(--guided-line-strong);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* --- 저장 확정 카드 --- */
+.guided-app .guided-saved-card {
+  margin: 20px 0 0;
+  padding: 22px 26px;
+  border: 3px solid var(--guided-cobalt);
+  border-radius: 10px;
+  background: var(--guided-blue-soft);
+}
+.guided-app .guided-saved-card h3 { margin: 0 0 10px; font-size: var(--fs-body); font-weight: 900; }
+.guided-app .guided-saved-card .guided-saved-file {
+  font-size: var(--fs-headline);
+  font-weight: 900;
+  color: var(--guided-navy);
+  word-break: break-all;
+}
+.guided-app .guided-saved-card dl { margin: 12px 0 0; font-size: var(--fs-support); }
+
+/* --- 복원·되돌아옴 배너 --- */
+.guided-app .guided-notice {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
+  margin: 0 0 18px; padding: 14px 18px;
+  border-left: 6px solid var(--guided-cobalt);
+  background: var(--guided-blue-soft);
+  font-size: var(--fs-support);
+}
+.guided-app .guided-notice button {
+  min-height: 44px; padding: 0 18px;
+  border: 2px solid var(--guided-cobalt);
+  border-radius: 6px; background: #fff;
+  color: var(--guided-cobalt-dark); font-weight: 800; cursor: pointer;
+}
+
+/* --- 확대 시 CTA가 화면 밖으로 밀리는 구조 해소 --- */
+.guided-app .guided-page { min-height: 0; }
+.guided-app .guided-action-bar {
+  position: sticky; bottom: 0;
+  margin-top: 28px; padding: 14px 0;
+  background: linear-gradient(to top, #fff 72%, rgba(255,255,255,0));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guided-app *, .guided-app *::before, .guided-app *::after {
+    animation-duration: .001ms !important; transition-duration: .001ms !important;
+  }
+}
+
+@media print {
+  .guided-app details { display: block; }
+  .guided-app details > *:not(summary) { display: revert !important; }
+  .guided-app .guided-action-bar, .guided-app .guided-rail { display: none; }
+}
+
+/* --- 남은 18px 미만 요소 (1280px 실측으로 특정) --- */
+.guided-app .guided-eyebrow,
+.guided-app .guided-eyebrow span,
+.guided-app .guided-funnel-node span,
+.guided-app .guided-scope-lines p span,
+.guided-app .guided-step-short { font-size: var(--fs-support); }
+
+.guided-app .guided-funnel-node strong,
+.guided-app .guided-scope-lines p strong { font-size: var(--fs-body); }
+
+.guided-app .guided-footer,
+.guided-app .guided-footer *,
+.guided-app .guided-brand span { font-size: var(--fs-meta); }
+
+/* --- 남은 대비 미달 (1440px 실측) --- */
+/* teal #058f91 은 흰 배경 3.93:1 로 AA 미달. 계열 의미는 유지하고 명도만 내린다. */
+.guided-app { --guided-teal: #056f71; }   /* 5.97:1 */
+
+.guided-app .guided-funnel-arrow,
+.guided-app .guided-scope-icon { color: #4a5568; }   /* 7.5:1 */
+.guided-app .guided-funnel-arrow { color: var(--guided-ink); opacity: 1; }

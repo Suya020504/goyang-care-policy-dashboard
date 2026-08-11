@@ -6,7 +6,7 @@ const vm = require('node:vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const TEXT_EXTENSIONS = new Set(['.html', '.css', '.js', '.json', '.md', '.py', '.ps1', '.csv']);
-const SKIP_DIRS = new Set(['.git', 'node_modules', '.vercel', 'tmp', 'screenshots']);
+const SKIP_DIRS = new Set(['.git', 'node_modules', '.vercel', 'tmp', '.tmp', '.claude', 'screenshots']);
 
 function textFiles(directory, results = []) {
   fs.readdirSync(directory, { withFileTypes: true }).forEach((entry) => {
@@ -29,7 +29,8 @@ test('공개 저장소 텍스트에 사용자 절대경로·비밀값·개인 �
   const corpus = textFiles(ROOT)
     .map((filePath) => fs.readFileSync(filePath, 'utf8'))
     .join('\n');
-  assert.doesNotMatch(corpus, /[A-Za-z]:[\\/]+Users[\\/]+(?!HAPPY\\.cache\\codex-runtimes)/i);
+  // 예외를 두지 않는다. 사용자명을 규칙에 박으면 그 이름이 공개되고, 가드에도 구멍이 생긴다.
+  assert.doesNotMatch(corpus, /[A-Za-z]:[\\/]+Users[\\/]+/i);
   assert.doesNotMatch(corpus, /\/(?:Users|home)\/[^/\s]+/i);
   assert.doesNotMatch(corpus, /(?:gho_|ghp_|github_pat_|AKIA)[A-Za-z0-9_\-]+/);
   assert.doesNotMatch(corpus, /[A-Za-z0-9._%+-]+@(gmail|naver|kakao)\.(com|net)/i);

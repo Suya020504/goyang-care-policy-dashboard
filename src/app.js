@@ -1465,7 +1465,13 @@
     const step = clamp(numberValue(target, state.guidedStep), 1, 6);
     if (step > state.guidedVisitedStep + 1) return;
     if (state.guidedStep === 4 && step > 4 && state.guidedChecks.length === 0) {
-      showToast('현장에서 확인할 항목을 한 개 이상 선택해 주세요.');
+      // 구석 토스트를 쓰지 않는다. 사용자의 시선이 있는 자리(체크 목록 바로 아래)에
+      // 안내를 띄우고, 화면을 다시 그리지 않아 방금 누른 버튼의 포커스를 지킨다.
+      const slot = document.querySelector('.guided-error-slot');
+      if (slot) {
+        slot.textContent = '현장에서 확인할 항목을 한 개 이상 골라 주세요.';
+        slot.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
       return;
     }
     const patch = {
@@ -1513,7 +1519,11 @@
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `현장조사_체크리스트_${model.selectedArea.dong}_${savedAt.slice(0, 10)}.json`;
+    // savedAt은 ISO(UTC)라 한국 시간 자정~오전 9시 사이에는 날짜가 하루 앞선다.
+    // 파일명은 담당자가 보는 이름이므로 로컬 날짜를 쓴다.
+    const local = new Date(savedAt);
+    const localDay = `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, '0')}-${String(local.getDate()).padStart(2, '0')}`;
+    anchor.download = `현장조사_체크리스트_${model.selectedArea.dong}_${localDay}.json`;
     document.body.append(anchor);
     anchor.click();
     anchor.remove();

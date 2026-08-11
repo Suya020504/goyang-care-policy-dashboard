@@ -69,11 +69,22 @@
     return slides.slice(0, index + 1).reduce((total, slide) => total + slide.durationSeconds, 0);
   }
 
+  // 요약 칩을 대본 데이터에서 렌더한다. 정적 문구로 두면 시간 배분이 바뀔 때마다 어긋난다.
+  function renderSessionSummary() {
+    const set = (id, label, seconds) => {
+      const node = document.getElementById(id);
+      if (node) node.textContent = `${label} ${formatTime(seconds)}`;
+    };
+    set('summary-talk', '본편', metadata.talkSeconds);
+    set('summary-transition', '전환', metadata.transitionSeconds);
+    set('summary-demo', 'MVP 시연', metadata.demoSeconds);
+  }
+
   function eventElapsedAt(index) {
     const talk = talkElapsedAt(index);
-    const extras = index + 1 > metadata.insertAfterSlide
-      ? metadata.transitionSeconds + metadata.demoSeconds
-      : 0;
+    // 시연 110초는 15번 장의 durationSeconds 로 이미 talkSeconds 에 들어 있다.
+    // 여기서 demoSeconds 를 또 더하면 이중 계상된다. 전환 시간만 더한다.
+    const extras = index + 1 > metadata.insertAfterSlide ? metadata.transitionSeconds : 0;
     return talk + extras;
   }
 
@@ -326,5 +337,6 @@
   window.setInterval(syncFromIframe, 300);
 
   buildStaticControls();
+  renderSessionSummary();
   render();
 })();

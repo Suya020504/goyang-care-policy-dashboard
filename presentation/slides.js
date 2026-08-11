@@ -486,7 +486,7 @@
 
   function assertContract() {
     const checks = {
-      slideCount: total === 15,
+      slideCount: total === 28,
       areaCount: DATA?.areas?.length === 44,
       candidateCount: PRO?.baseline?.candidateDongs?.length === 8,
       claimCount: DATA?.claimSummary?.total === 29,

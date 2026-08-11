@@ -93,7 +93,7 @@
             const status = item.id === activeStep ? 'is-current' : item.id <= visitedStep || completed.has(item.id) ? 'is-done' : 'is-upcoming';
             const disabled = item.id > visitedStep + 1;
             return `<li class="guided-step ${status}">
-              <button class="guided-step-button" type="button" data-action="guided-go-step" data-guided-step="${item.id}" ${disabled ? 'disabled' : ''} ${item.id === activeStep ? 'aria-current="step"' : ''}>
+              <button class="guided-step-button" type="button" data-action="guided-go-step" data-guided-step="${item.id}" aria-label="${item.id}단계 ${esc(item.label)}${disabled ? ' — 아직 열리지 않았습니다' : ''}" ${disabled ? 'disabled' : ''} ${item.id === activeStep ? 'aria-current="step"' : ''}>
                 <span class="guided-step-number" aria-hidden="true">${item.id}</span>
                 <span class="guided-step-label">${esc(item.label)}</span>
                 <span class="guided-step-short">${esc(item.short)}</span>
@@ -111,7 +111,8 @@
           <strong>${esc(model.productName || '닿지 않는 돌봄')}</strong>
           <span>${esc(model.productSubtitle || '고양시 교통·복지 현장조사 지원')}</span>
         </div>
-        <button class="guided-detail-link" type="button" data-action="open-analysis">분석 상세 <span aria-hidden="true">↗</span></button>
+        <button class="guided-detail-link" type="button" data-action="guided-reset" aria-label="검토를 처음부터 다시 시작합니다">처음부터 다시</button>
+        <button class="guided-detail-link" type="button" data-action="open-analysis" aria-label="분석 상세 화면을 엽니다">분석 상세 <span aria-hidden="true">↗</span></button>
       </header>`;
   }
 
@@ -119,11 +120,15 @@
     return `<p class="guided-eyebrow"><span>STEP ${step}</span>${esc(text)}</p>`;
   }
 
-  function actionBar({ action = 'guided-next', step, label, previousStep }) {
+  function actionBar({ action = 'guided-next', step, label, previousStep, disabled = false, rule = '' }) {
+    // 오류 슬롯은 항상 자리를 차지한다. 비어 있어도 지우지 않는다 —
+    // 화면 전체를 다시 그리지 않고 이 노드의 textContent만 바꿔 포커스를 지킨다.
     return `
+      ${rule ? `<p class="guided-rule-line" id="guided-rule-${step}">${esc(rule)}</p>` : ''}
+      <p class="guided-error-slot" role="status" aria-live="polite"></p>
       <div class="guided-action-bar">
-        ${previousStep ? `<button class="guided-back-link" type="button" data-action="guided-prev" data-guided-step="${previousStep}"><span aria-hidden="true">←</span> 이전 단계</button>` : '<span></span>'}
-        <button class="guided-primary-action" type="button" data-action="${esc(action)}" data-guided-step="${step}">
+        ${previousStep ? `<button class="guided-back-link" type="button" data-action="guided-prev" data-guided-step="${previousStep}" aria-label="이전 화면으로 돌아갑니다"><span aria-hidden="true">←</span> 이전 단계</button>` : '<span></span>'}
+        <button class="guided-primary-action" type="button" data-action="${esc(action)}" data-guided-step="${step}" aria-label="${esc(label)}"${disabled ? ' aria-disabled="true"' : ''}${rule ? ` aria-describedby="guided-rule-${step}"` : ''}>
           <span>${esc(label)}</span><span aria-hidden="true">→</span>
         </button>
       </div>`;
@@ -149,6 +154,17 @@
       </label>`;
   }
 
+  // 후보가 아닌 동을 고르면 usedFallback이 켜지지만 화면에는 한 번도 쓰이지 않아,
+  // 사용자는 자기 선택이 무시된 사실을 알 수 없었다.
+  function renderFallbackNotice(model, area) {
+    if (!model || !model.usedFallback) return '';
+    return `
+      <p class="guided-notice" role="status">
+        요청하신 동은 후보 ${esc(display(model.candidateCount, '8'))}곳에 들지 않아
+        <strong>${esc(area.dong)}</strong>을 대신 보고 있습니다.
+      </p>`;
+  }
+
   function renderStepOne(model, state) {
     const area = selectedArea(model);
     const areaCount = display(model.areaCount, '44');
@@ -156,6 +172,7 @@
     return `
       <section class="guided-page guided-page-intro" aria-labelledby="guided-title">
         ${eyebrow(1, '판단 범위를 먼저 고정합니다')}
+        ${renderFallbackNotice(model, area)}
         <h1 id="guided-title">오늘 무엇을 판단할까요?</h1>
         <p class="guided-lead"><strong>${esc(area.dong)}</strong>을 사업 도입지가 아니라 <strong>현장조사 대상</strong>으로 올릴지 검토합니다.</p>
 
@@ -466,9 +483,43 @@
           </div>
         </div>
 
-        <p class="guided-boundary-note">자유입력란 없이 개인정보가 없는 JSON 파일로 저장됩니다.</p>
-        ${actionBar({ previousStep: 5, action: 'guided-save', step: 6, label: `${area.dong} 현장조사 체크리스트 저장` })}
+        <p class="guided-boundary-note">자유입력란이 없어 저장 파일에 이름·주소·연락처가 들어가지 않습니다.</p>
+        ${renderSavedCard(model, state)}
+        ${actionBar({
+          previousStep: 5,
+          action: 'guided-save',
+          step: 6,
+          label: state.guidedSavedAt ? '같은 내용을 다시 저장합니다' : `${area.dong} 현장조사 체크리스트 저장`,
+        })}
       </section>`;
+  }
+
+  // 저장은 파일만 떨어뜨리고 화면에 흔적을 남기지 않았다. 전체화면 시연에서는
+  // 브라우저 다운로드 알림마저 가려져 결론 장면이 관측되지 않는다.
+  function renderSavedCard(model, state) {
+    if (!state.guidedSavedAt) return '';
+    const area = selectedArea(model);
+    // ISO(UTC)를 그대로 자르면 한국 시간 오전에는 날짜가 하루 밀린다. 로컬로 환산한다.
+    const at = new Date(String(state.guidedSavedAt));
+    const pad = (v) => String(v).padStart(2, '0');
+    const day = Number.isNaN(at.getTime())
+      ? String(state.guidedSavedAt).slice(0, 10)
+      : `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`;
+    const time = Number.isNaN(at.getTime())
+      ? String(state.guidedSavedAt).slice(11, 16)
+      : `${pad(at.getHours())}:${pad(at.getMinutes())}`;
+    const picked = asList(state.guidedChecks).length;
+    return `
+      <div class="guided-saved-card" role="status" aria-live="polite">
+        <h3>저장했습니다</h3>
+        <p class="guided-saved-file">현장조사_체크리스트_${esc(area.dong)}_${esc(day)}.json</p>
+        <dl>
+          <div><dt>저장 시각</dt><dd>${esc(day)} ${esc(time)}</dd></div>
+          <div><dt>현장에서 확인할 항목</dt><dd>${picked}개</dd></div>
+          <div><dt>자료 기준일</dt><dd>인구·시설 2026-06-30 · 버스 2025-08-25 · 경계 2026-04-01</dd></div>
+          <div><dt>자유입력란</dt><dd>없음</dd></div>
+        </dl>
+      </div>`;
   }
 
   function renderStep(step, model, state) {
