@@ -86,7 +86,7 @@
           <figure><figcaption><strong>70세 이상 1인세대</strong><span>수요 대리</span></figcaption><div class="map-frame" id="demand-map"></div></figure>
           <figure><figcaption><strong>의료시설 최근접거리</strong><span>접근성 대리</span></figcaption><div class="map-frame" id="facility-map"></div></figure>
         </div>
-        <div class="map-legend"><span><i class="legend-low"></i>낮음</span><span><i class="legend-high"></i>높음</span><strong>한 지도만으로는 같은 후보가 나오지 않습니다.</strong></div>
+        <div class="map-legend"><span><i class="legend-low"></i>낮음</span><span><i class="legend-high"></i>높음</span><span><i class="legend-outline"></i>네 재계산에 공통인 3곳</span><strong>테두리는 지표값을 덮지 않습니다.</strong></div>
         <footer class="source-line">행정안전부·건강보험심사평가원·행정동경계 · 개인 위치와 온돌 서비스 위치는 표시하지 않음</footer><span class="slide-number">06</span>
       </section>
 
@@ -125,56 +125,56 @@
       </section>
 
       <section class="slide" data-slide="9" aria-label="9 / 29">
-        <header class="slide-header"><p class="section-label">DSS 자기검증</p><h2>지표 하나를 빼면 후보 8곳 중 3곳이 바뀝니다.</h2></header>
+        <header class="slide-header"><p class="section-label">취약도 종합점수(DSS) 자기검증</p><h2>지표 하나를 빼면 후보 8곳 중 3곳이 바뀝니다.</h2></header>
         <div class="chart-split">
-          <figure><figcaption><strong>구성요소 순위상관</strong><span>44개 동 · Spearman ρ</span></figcaption><div class="chart" id="dependence-chart"></div></figure>
-          <figure><figcaption><strong>요소 제거 시 후보 교체</strong><span>기준 후보 8곳 대비</span></figcaption><div class="chart" id="ablation-chart"></div></figure>
+          <figure><figcaption><strong>동 순서가 비슷한 정도</strong><span>44개 동 · 순위상관(Spearman ρ)</span></figcaption><div class="chart" id="dependence-chart"></div></figure>
+          <figure><figcaption><strong>지표 하나를 뺀 재계산</strong><span>기준 후보 8곳 대비</span></figcaption><div class="chart" id="ablation-chart"></div></figure>
         </div>
         <p class="takeaway caution"><strong>버스 비효율 ↔ 의료거리 ρ=.931</strong>로 중복 가능성이 큽니다. 네 명세에서 모두 남은 곳은 고양동·관산동·행주동입니다.</p>
-        <footer class="source-line">팀 재분석 · 기술적 의존성 진단이며 인과·변수삭제 규칙이 아님 · VIF 1.05~2.06</footer><span class="slide-number">09</span>
+        <footer class="source-line">팀 재분석 · 기술적 의존성 진단이며 인과·변수삭제 규칙이 아님 · 지표 중복 경고값(VIF) 1.05~2.06</footer><span class="slide-number">09</span>
       </section>
 
       <section class="slide" data-slide="10" aria-label="10 / 29">
-        <header class="slide-header"><p class="section-label">기존 교통 중복</p><h2>마을버스는 ‘있음’만 확인됐고, 실제 이동은 아직 모릅니다.</h2></header>
+        <header class="slide-header"><p class="section-label">기존 교통 중복</p><h2>계획 배차표까지 확인했지만, 실제 이동은 아직 모릅니다.</h2></header>
         <div class="chart-with-note">
           <div class="chart large" id="village-chart"></div>
           <aside>
-            <strong>2025-08-25 정적 스크리닝</strong>
-            <ul><li>경계 안 정류장 2,095개</li><li>마을노선 표기 정류장 1,632개</li><li>고유 마을노선명 86개</li></ul>
-            <p>배차·방향·시간대·환승·OD가 없으므로 <b>중복도, 접근성, 품질</b>은 판정하지 않습니다.</p>
+            <strong>공식 자료 교차검증</strong>
+            <ul><li>고유 마을노선명 86개</li><li>공식 배차표 번호 후보 82개</li><li>단일 공식행 72개 · 추가 확인 14개</li></ul>
+            <p>2024년 자유기술 계획 배차이며 방향·시간대·환승·출발지-목적지(OD)가 없어 <b>실제 대기와 기능 중복</b>은 판정하지 않습니다.</p>
           </aside>
         </div>
-        <footer class="source-line">고양시 버스정류장 현황 2025-08-25 · 관산 127/129, 행주 34/40, 비교 대화 53/68</footer><span class="slide-number">10</span>
+        <footer class="source-line">정류장 2025-08-25 · 계획 배차표 2024-12-31 · 관산 127/129 · BMS 역사 연결 7/86(현행 형상 아님)</footer><span class="slide-number">10</span>
       </section>
 
       <section class="slide" data-slide="11" aria-label="11 / 29">
-        <header class="slide-header"><p class="section-label">목적지 확장</p><h2>복지 목적지 594건을 확보했지만 좌표는 0건입니다.</h2></header>
+        <header class="slide-header"><p class="section-label">목적지 정의 민감도</p><h2>목적지를 바꾸면 후보 8곳 중 최대 4곳이 달라집니다.</h2></header>
         <div class="welfare-layout">
-          <div class="welfare-numbers"><div><strong>593</strong><span>현재 웹 표시</span></div><div><strong>594</strong><span>2026-06 공식 파일</span></div><div class="zero"><strong>0</strong><span>확보한 정확 좌표</span></div></div>
+          <div class="welfare-numbers"><div><strong>11</strong><span>복지 목적지 치환 시나리오</span></div><div><strong>4/8</strong><span>후보 최대 교체</span></div><div><strong>11/11</strong><span>관산동 후보 유지</span></div></div>
           <div class="chart" id="welfare-chart"></div>
         </div>
-        <div class="data-gate"><strong>다음 결합</strong><span>도로명주소 좌표 → 복지관·경로당·서비스 제공처 → 운영시간·이용자격</span><em>좌표 전에는 접근성을 계산하지 않음</em></div>
-        <footer class="source-line">고양시 경로당 현황 웹 593건 · 2026-06 공개 파일 594행 · 노인복지관 3곳 · 주소검색·좌표변환 키 별도 필요</footer><span class="slide-number">11</span>
+        <div class="data-gate"><strong>방어 가능한 결론</strong><span>관산동은 반복됐지만, 목적지 정의에 따라 후보집합은 흔들립니다.</span><em>실제 62개 서비스 접근성·정책효과 아님</em></div>
+        <footer class="source-line">팀 목적지 치환 스트레스 테스트 · 26,595개 격자·44동 · 공개좌표 585건과 최신 좌표완성 570행의 Top8은 동일</footer><span class="slide-number">11</span>
       </section>
 
       <section class="slide" data-slide="12" aria-label="12 / 29">
-        <header class="slide-header"><p class="section-label">사전 시나리오</p><h2>30분 도달률은 대기시간 가정에 따라 달라집니다.</h2></header>
+        <header class="slide-header"><p class="section-label">사전 시나리오</p><h2>대기 7.2분을 넘으면 중앙 이동시간이 보행 대리보다 길어집니다.</h2></header>
         <div class="time-layout">
           <div class="chart large" id="time-chart"></div>
-          <aside class="assumption-panel"><strong>관산동 · 일반화 시나리오</strong><p>도보 0.8m/s + 접근·승하차 5분 + 대기 5/10/15분 + 차량 15km/h</p><dl><div><dt>도보 대리 30분 도달률</dt><dd>88.5%</dd></div><div><dt>시나리오 범위</dt><dd>99.6~100%</dd></div><div><dt>중앙 손익분기 대기</dt><dd>7.2분</dd></div></dl></aside>
+          <aside class="assumption-panel"><strong>관산동 · 일반화 시나리오</strong><p>도보 0.8m/s + 접근·승하차 5분 + 대기 5/10/15분 + 차량 15km/h</p><dl><div><dt>중앙 이동시간</dt><dd>14.1~24.1분</dd></div><div><dt>중앙 손익분기 대기</dt><dd>7.2분</dd></div><div><dt>30분 면적격자</dt><dd>88.5% → 99.6~100%</dd></div></dl></aside>
         </div>
         <p class="takeaway caution">이 수치는 정책 효과가 아니라 <strong>대기시간이 핵심 검증변수</strong>라는 것을 보여주는 가정표입니다.</p>
         <footer class="source-line">팀 일반화 시간 시나리오 · 실제 도로망·운행·환승·수요·목적지 미반영</footer><span class="slide-number">12</span>
       </section>
 
       <section class="slide" data-slide="13" aria-label="13 / 29">
-        <header class="slide-header"><p class="section-label">기존 DRT와의 차이</p><h2>현재 똑버스 4권역과 돌봄 이동 후보는 같은 단위가 아닙니다.</h2></header>
+        <header class="slide-header"><p class="section-label">기존 수요응답형 교통(DRT)과의 차이</p><h2>현재 똑버스 4권역과 돌봄 이동 후보는 같은 단위가 아닙니다.</h2></header>
         <div class="drt-layout">
-          <div class="drt-map" id="drt-map"></div>
+          <div class="drt-map-wrap"><div class="drt-map" id="drt-map"></div><p>행정동 대리 대응<br><strong>실제 운영권역 경계 아님</strong></p></div>
           <div class="drt-copy">
             <div class="drt-number"><strong>4</strong><span>식사·고봉·덕은·향동 운영권역</span></div>
             <div class="drt-number"><strong>14</strong><span>공개 목록 차량 시점값 · 2026-08-13</span></div>
-            <div class="comparison-lines"><p><span>현재 DRT 질문</span><strong>권역 안에서 호출에 대응</strong></p><p><span>돌봄 이동 질문</span><strong>대상자의 필수 목적지까지 도달</strong></p></div>
+            <div class="comparison-lines"><p><span>식사·덕은·향동</span><strong>출퇴근 고정노선 + 그 외 시간 호출형</strong></p><p><span>고봉</span><strong>06~24시 전일 호출형</strong></p><p><span>돌봄 이동 질문</span><strong>대상자의 필수 목적지까지 실제 도달</strong></p></div>
             <p class="small-warning">운영권역≠행정동. 향동→화전, 덕은→대덕·화전 대응은 별도 공간검증이 필요합니다.</p>
           </div>
         </div>
@@ -231,22 +231,24 @@
       </section>
 
       <section class="slide appendix" data-slide="18" aria-label="18 / 29">
-        <header class="slide-header"><p class="section-label">부록 A0 · 피드백 추적</p><h2>심사위원 지적 여섯 가지를 모두 추적합니다.</h2></header>
+        <header class="slide-header"><p class="section-label">부록 A0 · 피드백 추적</p><h2>심사위원 피드백에서 정의한 여덟 가지 보완항목을 추적합니다.</h2></header>
         <div class="feedback-matrix">
           <div class="matrix-head"><span>지적</span><span>보완</span><span>남은 검증</span></div>
+          <div><strong>오프닝·메시지 일관성</strong><span>확정→검증 순서로 교정</span><em>발표 전 장별 점검</em></div>
           <div><strong>실제 대상·62개 위치 부재</strong><span>대리/실제 경계 명시</span><em>비식별 결합 필요</em></div>
           <div><strong>DSS 중복 가능성</strong><span>상관·VIF·ablation</span><em>실제자료 재명세</em></div>
-          <div><strong>마을버스 중복</strong><span>정적 존재 스크리닝</span><em>배차·방향·OD</em></div>
-          <div><strong>의료 중심 목적지</strong><span>복지시설 594건 확보</span><em>좌표·시간·자격</em></div>
+          <div><strong>마을버스 중복</strong><span>배차표 후보 82/86 확인</span><em>현행 방향·OD·실제 대기</em></div>
+          <div><strong>의료 중심 목적지</strong><span>복지 목적지 11개 치환·최대 4/8 교체</span><em>62개 서비스·시간·자격</em></div>
           <div><strong>기존 DRT 차별성</strong><span>4권역·14대 분리</span><em>권역 공간검증</em></div>
           <div><strong>효과 제시</strong><span>시간 가정·KPI 설계</span><em>사전·사후 실측</em></div>
+          <div><strong>실제자료 검증·보정 경로</strong><span>결합→교차검증→수정</span><em>기관자료 필요</em></div>
         </div>
         <footer class="source-line">본선진출팀 피드백 PDF · 이번 개편 결과와 남은 데이터 요청을 함께 표시</footer><span class="slide-number">A0</span>
       </section>
 
       <section class="slide appendix" data-slide="19" aria-label="19 / 29">
         <header class="slide-header"><p class="section-label">부록 A1 · 데이터 사전</p><h2>숫자·단위·기준일을 한 장에 고정합니다.</h2></header>
-        <div class="data-dictionary"><div class="dict-head"><span>값</span><span>정의·단위</span><span>기준일</span><span>판정</span></div><div><strong>1,057,438</strong><span>고양시 주민등록 인구 · 명</span><time>2026-06-30</time><em>확보</em></div><div><strong>35,295</strong><span>70세 이상 1인세대 · 세대</span><time>2026-06-30</time><em>확보</em></div><div><strong>1,893</strong><span>병·의원 1,397 + 약국 496 · 개소</span><time>2026-06-30</time><em>확보</em></div><div><strong>2,095</strong><span>경계 안 버스정류장 · 개소</span><time>2025-08-25</time><em>노후</em></div><div><strong>594</strong><span>공식 경로당 파일 · 행</span><time>2026-06</time><em>좌표 없음</em></div></div>
+        <div class="data-dictionary"><div class="dict-head"><span>값</span><span>정의·단위</span><span>기준일</span><span>판정</span></div><div><strong>1,057,438</strong><span>고양시 주민등록 인구 · 명</span><time>2026-06-30</time><em>확보</em></div><div><strong>35,295</strong><span>70세 이상 1인세대 · 세대</span><time>2026-06-30</time><em>확보</em></div><div><strong>1,893행</strong><span>HIRA 입력: 병·의원 등 1,397 + 약국 496</span><time>2026-06-30</time><em>경계 안 1,892점</em></div><div><strong>2,095</strong><span>경계 안 버스정류장 · 개소</span><time>2025-08-25</time><em>노후</em></div><div><strong>585점</strong><span>경기데이터드림 경로당 유효 공개좌표</span><time>2025-06-30</time><em>최신 594행과 결합 QA</em></div></div>
         <footer class="source-line">단위가 다른 값은 합산하지 않음 · 기준일 불일치는 해석 한계로 유지</footer><span class="slide-number">A1</span>
       </section>
 
@@ -262,6 +264,7 @@
           <div><strong>행정안전부</strong><span>인구·1인세대</span></div><i>→</i><div><strong>행정동·100m 격자</strong><span>공간 결합</span></div><i>→</i><div><strong>수요 신호</strong><span>동 단위 집계</span></div>
           <div><strong>HIRA</strong><span>병·의원·약국</span></div><i>→</i><div><strong>최근접 직선거리</strong><span>격자 가중평균</span></div><i>→</i><div><strong>의료 대리 신호</strong><span>실제 이동 아님</span></div>
           <div><strong>고양시</strong><span>버스정류장·노선명</span></div><i>→</i><div><strong>경계 내 공간결합</strong><span>정적 표기</span></div><i>→</i><div><strong>교통 공급 신호</strong><span>배차 없음</span></div>
+          <div><strong>경기데이터드림</strong><span>경로당·복지관·돌봄기관</span></div><i>→</i><div><strong>목적지 치환</strong><span>부분·완전 분리</span></div><i>→</i><div><strong>후보 민감도</strong><span>최대 4/8 교체</span></div>
         </div>
         <div class="formula">DSS = 0.5·z(CAG) + 0.3·z(버스 비효율) + 0.2·z(의료거리)</div>
         <footer class="source-line">CAG=demand−RI · 세부 변환·해시·결과표는 재현분석 보고서에 보존</footer><span class="slide-number">A3</span>
@@ -289,10 +292,10 @@
       </section>
 
       <section class="slide appendix" data-slide="25" aria-label="25 / 29">
-        <header class="slide-header"><p class="section-label">부록 A7 · 마을버스 한계</p><h2>마을버스는 배차·방향·OD가 빠진 1차 스크리닝입니다.</h2></header>
-        <div class="known-unknown"><div><strong>확인한 것</strong><ul><li>정류장별 노선명·유형 표기</li><li>동별 마을노선 존재 정류장 비율</li><li>고유 마을노선명 수</li></ul></div><div><strong>확인하지 못한 것</strong><ul><li>배차간격·첫차·막차</li><li>방향·환승·운행일</li><li>대상자→목적지 OD</li></ul></div></div>
+        <header class="slide-header"><p class="section-label">부록 A7 · 마을버스 한계</p><h2>계획 배차 후보는 확인했고, 실제 운행·방향·OD는 남았습니다.</h2></header>
+        <div class="known-unknown"><div><strong>확인한 것</strong><ul><li>정류장별 노선명·유형 표기</li><li>86개 중 번호후보 82·단일행 72</li><li>2023 BMS 역사 연결 7개</li></ul></div><div><strong>확인하지 못한 것</strong><ul><li>현행 첫차·막차·시간대 배차</li><li>방향·환승·실제 운행준수</li><li>대상자→목적지 OD</li></ul></div></div>
         <div class="stop-banner">따라서 ‘마을버스가 있다’ → ‘돌봄 이동이 해결됐다’로 해석하지 않습니다.</div>
-        <footer class="source-line">정적 존재 스크리닝 · 실제 중복 검증은 TAGO 노선·정류소·시간표와 목적지 결합 필요</footer><span class="slide-number">A7</span>
+        <footer class="source-line">계획 배차표 2024-12-31 · BMS 2023 역사자료 · 실제 중복 검증은 현행 노선·시간·목적지·OD 결합 필요</footer><span class="slide-number">A7</span>
       </section>
 
       <section class="slide appendix" data-slide="26" aria-label="26 / 29">
@@ -338,6 +341,9 @@
   <script defer src="../public/data/data.js"></script>
   <script defer src="../public/data/pro_analysis.js"></script>
   <script defer src="../public/data/welfare_destinations.js"></script>
+  <script defer src="../public/data/welfare_coordinate_layers.js"></script>
+  <script defer src="../public/data/welfare_destination_sensitivity.js"></script>
+  <script defer src="../public/data/bus_network_evidence.js"></script>
   <script defer src="../public/data/boundaries.js"></script>
   <script defer src="./slides.js"></script>
 </body>

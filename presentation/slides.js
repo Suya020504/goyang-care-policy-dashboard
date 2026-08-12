@@ -4,6 +4,9 @@
   const DATA = window.DDOL_V2_DATA;
   const PRO = window.DDOL_PRO_ANALYSIS;
   const WELFARE = window.DDOL_WELFARE_DESTINATIONS;
+  const WELFARE_COORDINATES = window.DDOL_WELFARE_COORDINATE_LAYERS;
+  const WELFARE_DESTINATION_SENSITIVITY = window.DDOL_WELFARE_DESTINATION_SENSITIVITY;
+  const BUS_NETWORK_EVIDENCE = window.DDOL_BUS_NETWORK_EVIDENCE;
   const GEO = window.DDOL_V2_BOUNDARIES;
   const slides = [...document.querySelectorAll('.slide')];
   const total = slides.length;
@@ -32,7 +35,7 @@
     return `#${aa.map((value, index) => Math.round(value + ((bb[index] - value) * amount)).toString(16).padStart(2, '0')).join('')}`;
   }
 
-  function mapMarkup({ metric, transform = (value) => value, low = '#edf3f8', high = C.navy, labels = false, highlight = [], focus, dark = false } = {}) {
+  function mapMarkup({ metric, transform = (value) => value, low = '#edf3f8', high = C.navy, labels = false, highlight = [], highlightStyle = 'fill', focus, dark = false } = {}) {
     const areaByCode = new Map(DATA.areas.map((area) => [area.code, area]));
     const values = metric ? DATA.areas.map((area) => transform(Number(area[metric]) || 0)) : [];
     const min = values.length ? Math.min(...values) : 0;
@@ -44,10 +47,13 @@
       const value = metric && area ? transform(Number(area[metric]) || 0) : 0;
       const t = clamp((value - min) / span, 0, 1);
       let fill = metric ? hexMix(low, high, t) : (dark ? '#244d73' : '#e7edf3');
-      if (highlightSet.has(feature.dong)) fill = C.teal;
+      if (highlightSet.has(feature.dong) && highlightStyle === 'fill') fill = C.teal;
       if (feature.dong === focus) fill = C.orange;
       const active = highlightSet.has(feature.dong) || feature.dong === focus;
-      return `<path d="${feature.path}" fill="${fill}" stroke="${dark ? '#416785' : '#ffffff'}" stroke-width="${active ? 3.2 : 1.25}" vector-effect="non-scaling-stroke"><title>${esc(feature.dong)}</title></path>`;
+      const stroke = active && highlightStyle === 'outline'
+        ? C.orange
+        : (dark ? '#416785' : '#ffffff');
+      return `<path d="${feature.path}" fill="${fill}" stroke="${stroke}" stroke-width="${active ? 3.8 : 1.25}" vector-effect="non-scaling-stroke"><title>${esc(feature.dong)}</title></path>`;
     }).join('');
     const labelSet = new Set([...highlight, focus].filter(Boolean));
     const text = labels ? GEO.features.filter((feature) => labelSet.has(feature.dong)).map((feature) => `<text x="${feature.labelX}" y="${feature.labelY}" text-anchor="middle" dominant-baseline="central" fill="${dark ? '#fff' : C.navy}" font-size="18" font-weight="800" stroke="${dark ? C.navy : '#fff'}" stroke-width="5" paint-order="stroke">${esc(feature.dong)}</text>`).join('') : '';
@@ -56,10 +62,10 @@
 
   function renderMaps() {
     set('#cover-map', mapMarkup({ highlight: PRO.dssAblation.stableCoreDongs, dark: false }));
-    set('#demand-map', mapMarkup({ metric: 'single70', low: '#edf7f5', high: C.teal, highlight: PRO.dssAblation.stableCoreDongs, labels: true }));
-    set('#facility-map', mapMarkup({ metric: 'nearestFacilityM', transform: Math.log1p, low: '#edf3fb', high: C.navy, highlight: PRO.dssAblation.stableCoreDongs, labels: true }));
+    set('#demand-map', mapMarkup({ metric: 'single70', low: '#edf7f5', high: C.teal, highlight: PRO.dssAblation.stableCoreDongs, highlightStyle: 'outline', labels: true }));
+    set('#facility-map', mapMarkup({ metric: 'nearestFacilityM', transform: Math.log1p, low: '#edf3fb', high: C.navy, highlight: PRO.dssAblation.stableCoreDongs, highlightStyle: 'outline', labels: true }));
     set('#candidate-map', mapMarkup({ highlight: PRO.baseline.candidateDongs, focus: '관산동', labels: true }));
-    set('#drt-map', mapMarkup({ highlight: ['식사동', '고봉동', '대덕동', '화전동'], labels: true }));
+    set('#drt-map', mapMarkup({ highlight: ['식사동', '고봉동', '대덕동', '화전동'], highlightStyle: 'outline', labels: true }));
     set('#closing-map', mapMarkup({ highlight: PRO.dssAblation.stableCoreDongs, labels: true, dark: true }));
   }
 
@@ -113,27 +119,58 @@
   }
 
   function renderWelfare() {
-    const names = ['관산동', '행주동', '대화동'];
-    const rows = names.map((dong) => WELFARE.areaRows.find((row) => row.dong === dong));
-    const width = 820; const height = 410; const left = 150; const maxW = 590; const max = Math.max(...rows.map((row) => row.seniorCenterCount));
-    const content = [];
+    const wanted = [
+      ['partial_senior_centers', '경로당 · 부분'],
+      ['full_senior_centers', '경로당 · 완전'],
+      ['partial_senior_welfare_centers', '노인복지관 · 부분'],
+      ['full_senior_welfare_centers', '노인복지관 · 완전'],
+      ['partial_elder_care_providers', '돌봄기관 · 부분'],
+      ['full_elder_care_providers', '돌봄기관 · 완전'],
+    ];
+    const byId = new Map((WELFARE_DESTINATION_SENSITIVITY?.scenarios || []).map((row) => [row.scenario_id, row]));
+    const rows = wanted.map(([id, label]) => ({ ...byId.get(id), label })).filter((row) => row.scenario_id);
+    const width = 820; const height = 410; const left = 205; const maxW = 505; const maxChange = 8;
+    const content = [
+      `<text x="${left}" y="28" class="svg-small">후보 교체 0곳</text>`,
+      `<text x="${left + maxW}" y="28" text-anchor="end" class="svg-small">후보 교체 8곳</text>`,
+    ];
     rows.forEach((row, index) => {
-      const y = 58 + index * 105; const w = row.seniorCenterCount / max * maxW;
-      content.push(`<text x="${left - 18}" y="${y + 29}" text-anchor="end" class="svg-label">${esc(row.dong)}</text><rect x="${left}" y="${y}" width="${maxW}" height="42" fill="#dfe6ed"/><rect x="${left}" y="${y}" width="${w}" height="42" fill="${row.dong === '관산동' ? C.teal : C.blue}"/><text x="${left + w - 12}" y="${y + 29}" text-anchor="end" fill="#fff" font-size="17" font-weight="850">${row.seniorCenterCount}건</text>`);
+      const y = 48 + index * 55; const widthValue = row.replacement_count / maxChange * maxW;
+      const color = row.replacement_scope === 'full_cag_and_facility_term' ? C.orange : C.teal;
+      content.push(`<text x="${left - 16}" y="${y + 25}" text-anchor="end" class="svg-label">${esc(row.label)}</text>`);
+      content.push(`<rect x="${left}" y="${y}" width="${maxW}" height="34" fill="#dfe6ed"/><rect x="${left}" y="${y}" width="${widthValue}" height="34" fill="${color}"/>`);
+      content.push(`<text x="${left + Math.max(48, widthValue - 9)}" y="${y + 24}" text-anchor="end" fill="${row.replacement_count ? '#fff' : C.navy}" font-size="15" font-weight="850">${row.replacement_count}/8</text>`);
     });
-    content.push(`<text x="${left}" y="385" class="svg-small">행정동 집계만 확보 · 정확 좌표 0건</text>`);
-    set('#welfare-chart', svg(content.join(''), `0 0 ${width} ${height}`, '관산동 행주동 대화동 경로당 행정동 집계'));
+    content.push(`<circle cx="${left}" cy="389" r="7" fill="${C.teal}"/><text x="${left + 14}" y="394" class="svg-small">시설거리 항만 치환</text><circle cx="${left + 190}" cy="389" r="7" fill="${C.orange}"/><text x="${left + 204}" y="394" class="svg-small">CAG와 시설거리 모두 치환</text>`);
+    set('#welfare-chart', svg(content.join(''), `0 0 ${width} ${height}`, '복지 목적지 종류와 치환 범위에 따른 후보 Top8 교체 수'));
   }
 
   function renderTime() {
     const rows = PRO.accessibilityTimeScenarios.candidateRows.filter((row) => row.dong === '관산동');
-    const reference = rows[0]?.referenceCoverage30 * 100 || 0;
-    const width = 980; const height = 480; const left = 160; const maxW = 720;
-    const renderRow = (label, value, y, color) => `<text x="${left - 20}" y="${y + 29}" text-anchor="end" class="svg-label">${esc(label)}</text><rect x="${left}" y="${y}" width="${maxW}" height="42" fill="#dfe6ed"/><rect x="${left}" y="${y}" width="${value / 100 * maxW}" height="42" fill="${color}"/><text x="${left + value / 100 * maxW - 12}" y="${y + 29}" text-anchor="end" fill="#fff" font-size="17" font-weight="850">${fmt(value, 1)}%</text>`;
-    const content = [renderRow('도보 대리', reference, 55, C.navy)];
-    rows.sort((a, b) => a.waitMinutes - b.waitMinutes).forEach((row, index) => content.push(renderRow(`대기 ${row.waitMinutes}분`, row.scenarioCoverage30 * 100, 135 + index * 80, index === 2 ? C.orange : C.teal)));
-    content.push(`<text x="${left}" y="455" class="svg-small">30분 내 도달 격자 비율 · 운영성과가 아닌 가정 시나리오</text>`);
-    set('#time-chart', svg(content.join(''), `0 0 ${width} ${height}`, '관산동 대기시간별 30분 도달률 시나리오'));
+    const ordered = rows.sort((a, b) => a.waitMinutes - b.waitMinutes);
+    const reference = ordered[0]?.referenceMedianMinutes || 0;
+    const breakEven = ordered[0]?.breakEvenWaitMedianMinutes || 0;
+    const width = 980; const height = 480; const left = 150; const right = 850; const top = 55; const bottom = 375;
+    const yMin = 10; const yMax = 26;
+    const xForWait = (wait) => left + ((wait - 5) / 10) * (right - left);
+    const yForTime = (minutes) => bottom - ((minutes - yMin) / (yMax - yMin)) * (bottom - top);
+    const content = [];
+    [10, 15, 20, 25].forEach((tick) => {
+      const y = yForTime(tick);
+      content.push(`<line x1="${left}" y1="${y}" x2="${right}" y2="${y}" stroke="#d9e1ea"/><text x="${left - 18}" y="${y + 5}" text-anchor="end" class="svg-small">${tick}분</text>`);
+    });
+    const referenceY = yForTime(reference);
+    content.push(`<line x1="${left}" y1="${referenceY}" x2="${right}" y2="${referenceY}" stroke="${C.navy}" stroke-width="3" stroke-dasharray="10 8"/><text x="${right}" y="${referenceY - 12}" text-anchor="end" fill="${C.navy}" font-size="16" font-weight="850">보행 대리 중앙 ${fmt(reference, 1)}분</text>`);
+    const breakEvenX = xForWait(breakEven);
+    content.push(`<line x1="${breakEvenX}" y1="${top}" x2="${breakEvenX}" y2="${bottom}" stroke="${C.orange}" stroke-width="3" stroke-dasharray="7 7"/><text x="${breakEvenX + 12}" y="${top + 24}" fill="${C.orange}" font-size="16" font-weight="850">손익분기 대기 ${fmt(breakEven, 1)}분</text>`);
+    const points = ordered.map((row) => `${xForWait(row.waitMinutes)},${yForTime(row.scenarioMedianMinutes)}`).join(' ');
+    content.push(`<polyline points="${points}" fill="none" stroke="${C.teal}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`);
+    ordered.forEach((row) => {
+      const x = xForWait(row.waitMinutes); const y = yForTime(row.scenarioMedianMinutes);
+      content.push(`<circle cx="${x}" cy="${y}" r="11" fill="${C.teal}" stroke="#fff" stroke-width="4"/><text x="${x}" y="${y - 24}" text-anchor="middle" fill="${C.teal}" font-size="19" font-weight="900">${fmt(row.scenarioMedianMinutes, 1)}분</text><text x="${x}" y="${bottom + 38}" text-anchor="middle" class="svg-label">대기 ${row.waitMinutes}분</text>`);
+    });
+    content.push(`<text x="${left}" y="455" class="svg-small">중앙 격자 일반화시간 · 운영성과가 아닌 공개 가정 시나리오</text>`);
+    set('#time-chart', svg(content.join(''), `0 0 ${width} ${height}`, '관산동 대기시간별 중앙 일반화 이동시간과 손익분기 대기시간'));
   }
 
   function renderCandidateTable() {
@@ -172,7 +209,7 @@
   }
 
   function renderAll() {
-    if (!DATA || !PRO || !WELFARE || !GEO) {
+    if (!DATA || !PRO || !WELFARE || !WELFARE_DESTINATION_SENSITIVITY || !GEO) {
       ['#cover-map', '#demand-map', '#facility-map', '#candidate-map', '#drt-map', '#closing-map', '#dependence-chart', '#ablation-chart', '#village-chart', '#welfare-chart', '#time-chart', '#candidate-table', '#weight-chart', '#spatial-chart', '#claim-chart'].forEach((selector) => fallback(selector, '공개 분석 데이터를 불러오지 못했습니다.'));
       return;
     }
@@ -216,7 +253,7 @@
   }
 
   function assertContract() {
-    const checks = { slideCount: total === 29, mainCount: slides.filter((slide) => !slide.classList.contains('appendix')).length === 17, appendixCount: slides.filter((slide) => slide.classList.contains('appendix')).length === 12, areaCount: DATA?.areas?.length === 44, candidateCount: PRO?.baseline?.candidateDongs?.length === 8, welfareLoaded: WELFARE?.metadata?.workbookRecordCount === 594, dssAblation: PRO?.dssAblation?.scenarioCount === 4 };
+    const checks = { slideCount: total === 29, mainCount: slides.filter((slide) => !slide.classList.contains('appendix')).length === 17, appendixCount: slides.filter((slide) => slide.classList.contains('appendix')).length === 12, areaCount: DATA?.areas?.length === 44, candidateCount: PRO?.baseline?.candidateDongs?.length === 8, welfareLoaded: WELFARE?.metadata?.workbookRecordCount === 594, welfareCoordinatesLoaded: WELFARE_COORDINATES?.metadata?.counts?.seniorCenters === 591 && WELFARE_COORDINATES?.points?.filter((point) => point.serviceType === 'senior_center').length === 585, welfareSensitivityLoaded: WELFARE_DESTINATION_SENSITIVITY?.scenarios?.length === 12 && WELFARE_DESTINATION_SENSITIVITY?.candidateStability?.filter((row) => row.stable_all_scenarios).length === 4, busEvidenceLoaded: BUS_NETWORK_EVIDENCE?.headway?.officialRouteNumberCandidates === 82 && BUS_NETWORK_EVIDENCE?.headway?.uniqueOfficialRows === 72, dssAblation: PRO?.dssAblation?.scenarioCount === 4 };
     window.DDOL_PRESENTATION_CHECKS = Object.freeze(checks);
     const failed = Object.entries(checks).filter(([, value]) => !value).map(([key]) => key); if (failed.length) console.error('발표자료 계약 점검 실패', failed);
   }

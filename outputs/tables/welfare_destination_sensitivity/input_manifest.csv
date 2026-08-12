@@ -1,0 +1,7 @@
+﻿input_id,record_count,reference_date,sha256,role,privacy_boundary
+baseline_area_scores,44,mixed_2026-06-30,455106174A3E492D501F73B8BA55EFD1B7525656638E8109AE015C290C352DE3,기준 DSS 구성요소와 44동 키,행정동 집계
+baseline_grid_scores,26595,boundary_2026-04-01,F2B4631D6C4DB1C379BB9CAA13D29A9C055273F1C0D682BAC13EDD19C0A9E9BF,동일 100m 격자 x/y와 행정동 키,인구가 없는 격자 기하
+senior_centers,585,2025-06-30,CEEA44E2A4F45EEC9E0419811CDEF10A926B21F3EB243E49B824D23A4E65AA74,경로당 공개 좌표 대리층,공개용은 시설명·주소·연락처 제외
+senior_welfare_centers,3,2026-02-27,75BED62CB76B623804C7A6A27907BD20CC936C8F2163E6D45B35D1245E2EFEFE,노인복지관 공개 좌표 대리층,공개용은 시설명·주소·연락처 제외
+elder_care_providers,10,2026-03-02,C8EEAAAFFE83DE53492F63B1D1DA552B22C0C967E20F4D2E40871355DA6ADD59,노인돌봄 수행기관 공개 좌표 대리층,공개용은 시설명·주소·연락처 제외
+senior_centers_latest_workbook_linkage,594,2026-06,351BA8E581AD4F010034B2B902450B84346E2046B71790E3C197CD88D97463EA,최신 경로당 594행 중 공개좌표 완성 570행 필터,공개 산출물은 행정동 집계만 제공; 24행 좌표 미완성

@@ -1,0 +1,11 @@
+﻿check_id,observed,expected,passed,note
+area_rows,44.0,44.0,True,44동 1:1
+grid_rows,26595.0,26595.0,True,동일 100m 격자
+grid_unique_id,26595.0,26595.0,True,격자 ID 중복 0
+senior_center_valid_coordinates,585.0,585.0,True,2025-06-30 공개좌표
+senior_center_duplicate_source_ids,0.0,0.0,True,중복 0
+senior_center_latest_coordinate_complete,570.0,570.0,True,2026-06 최신 594행 중 24행 좌표 미완성
+senior_welfare_center_valid_coordinates,3.0,3.0,True,2026-02-27 공개좌표
+elder_care_provider_valid_coordinates,10.0,10.0,True,2026-03-02 공개좌표
+baseline_dss_max_abs_difference,1.8141044222375058e-13,0.0,True,기존 DSS 44행 재계산 포스터 대리모형 계약 일치
+scenario_rows,528.0,528.0,True,12 시나리오 x 44동

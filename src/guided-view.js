@@ -168,6 +168,7 @@
   function renderStepOne(model, state) {
     const area = selectedArea(model);
     const areaCount = display(model.areaCount, '44');
+    const eligibleAreaCount = display(model.eligibleAreaCount, '41');
     const candidateCount = display(model.candidateCount, '8');
     return `
       <section class="guided-page guided-page-intro" aria-labelledby="guided-title">
@@ -177,9 +178,9 @@
         <p class="guided-lead">고령 수요·의료시설 거리·버스 공급을 함께 보고, 정책을 확정하기 전에 <strong>어디부터 현장조사할지</strong> 정합니다.</p>
 
         <div class="guided-funnel" aria-label="검토 범위: 고양시 행정동, 제출 후보, ${esc(area.dong)} 순서">
-          <div class="guided-funnel-node"><span>전체 범위</span><strong>고양시 ${esc(areaCount)}개 동</strong></div>
+          <div class="guided-funnel-node"><span>공개자료 비교</span><strong>고양시 ${esc(areaCount)}개 동</strong></div>
           <span class="guided-funnel-arrow" aria-hidden="true">→</span>
-          <div class="guided-funnel-node"><span>제출 후보</span><strong>${esc(candidateCount)}곳</strong></div>
+          <div class="guided-funnel-node"><span>제출 당시 선정 규칙</span><strong>${esc(eligibleAreaCount)}개 동 중 ${esc(candidateCount)}곳</strong></div>
           <span class="guided-funnel-arrow" aria-hidden="true">→</span>
           <div class="guided-funnel-node is-selected"><span>오늘 확인</span><strong>${esc(area.dong)}</strong></div>
         </div>
@@ -190,7 +191,7 @@
           <div><span class="guided-scope-icon is-do" aria-hidden="true">3</span><p><strong>행동</strong><span>자동 도입 추천 대신 자료요청과 현장조사 체크리스트를 남깁니다.</span></p></div>
         </div>
 
-        <p class="guided-boundary-note">현재는 병·의원·약국까지의 <strong>의료 접근성 대리진단</strong>입니다. 실제 고양온돌 대상자 위치와 62개 서비스 제공 위치는 사용하지 않았습니다.</p>
+        <p class="guided-boundary-note">현재는 병·의원·약국까지의 <strong>의료 접근성 대리진단</strong>입니다. 41개 동은 과거 팀이 똑버스 사후 대리매핑 3개 동을 제외한 제출 당시 규칙이며, 공식 운영권역 정확도가 아닙니다. 실제 고양온돌 대상자 위치와 62개 서비스 제공 위치는 사용하지 않았습니다.</p>
 
         ${renderAreaSelect(model, state, area)}
         ${actionBar({ step: 2, label: `${area.dong} 사례로 시작` })}
@@ -432,16 +433,23 @@
         <h1 id="guided-title">현장에서 무엇을 확인해야 하나요?</h1>
         <p class="guided-lead">아래 항목은 공개데이터만으로 알 수 없습니다. 조사할 항목을 체크해 주세요.</p>
 
-        ${renderVillageBusScreening(model, area)}
-
-        ${renderWelfareDestinationSnapshot(model, area)}
-
-        ${renderDataAcquisition(model)}
-
         <fieldset class="guided-check-fieldset">
           <legend class="guided-visually-hidden">현장조사 확인 항목</legend>
           ${items.map((item) => renderFieldCheck(item, state)).join('')}
         </fieldset>
+
+        <details class="guided-evidence-disclosure">
+          <summary>왜 이 항목을 확인하나요?</summary>
+          <div class="guided-evidence-disclosure-body">
+            ${renderVillageBusScreening(model, area)}
+            ${renderBusNetworkEvidence(model)}
+            ${renderWelfareDestinationSnapshot(model, area)}
+            ${renderWelfareCoordinateSnapshot(model, area)}
+            ${renderWelfareDestinationSensitivity(model, area)}
+            ${renderCurrentDrtContext(model)}
+            ${renderDataAcquisition(model)}
+          </div>
+        </details>
 
         <p class="guided-boundary-note">개인 위치·실제 이동경로·정책 효과는 이 화면에 포함하지 않습니다.</p>
         ${actionBar({ previousStep: 3, step: 5, label: '다음: 어떤 대안을 가를까요?' })}
@@ -458,6 +466,19 @@
       </section>`;
   }
 
+  function renderCurrentDrtContext(model) {
+    const context = model.currentDrtContext;
+    if (!context) return '';
+    return `
+      <aside class="guided-drt-context" aria-label="기존 똑버스 운영방식과 돌봄 이동 검증의 차이">
+        <h2>기존 똑버스와 무엇이 다른가요?</h2>
+        <div><span>식사·덕은·향동</span><strong>${esc(context.mixedOperationDescription)}</strong></div>
+        <div><span>${esc(context.fullDayFlexibleZone)}</span><strong>${esc(context.fullDayFlexibleDescription)}</strong></div>
+        <p>${esc(context.interpretation)}</p>
+        <small>${esc(context.serviceZoneCount)}개 운영권역 · ${esc(context.vehicleSnapshot)}대 시점값 · ${esc(context.limitation)}</small>
+      </aside>`;
+  }
+
   function renderWelfareDestinationSnapshot(model, area) {
     const snapshot = model.welfareDestinationSnapshot;
     if (!snapshot) return '';
@@ -465,8 +486,46 @@
       <aside class="guided-welfare-screen" aria-label="${esc(area.dong)} 복지 목적지 목록 준비 상태">
         <div><span>${esc(area.dong)} 경로당</span><strong>${esc(snapshot.selectedDongCount)}곳</strong></div>
         <div><span>현재 웹 / 2026-06 Excel</span><strong>${esc(snapshot.currentWebDisplayedTotal)}건 / ${esc(snapshot.workbookRecordCount)}행</strong></div>
-        <div><span>좌표 확보</span><strong>${esc(snapshot.coordinateCount)}건</strong></div>
-        <p><b>해석</b>${esc(snapshot.interpretation)}</p>
+        <div><span>2026-06 파일 내 좌표 열</span><strong>없음</strong></div>
+        <p><b>해석</b>최신 파일 자체에는 좌표 열이 없지만, 별도 공식 공개좌표표와 연결한 공간 대리값은 아래에서 분리해 보여 줍니다.</p>
+      </aside>`;
+  }
+
+  function renderWelfareCoordinateSnapshot(model, area) {
+    const snapshot = model.welfareCoordinateSnapshot;
+    if (!snapshot) return '';
+    const center = snapshot.seniorCenter;
+    const linkage = snapshot.linkage || {};
+    return `
+      <aside class="guided-welfare-coordinate" aria-label="${esc(area.dong)} 복지 목적지 공식 좌표 접근성 대리값">
+        <h2>복지 목적지 좌표도 보완했습니다.</h2>
+        <div class="guided-welfare-coordinate-grid">
+          <p><span>경로당 공개좌표</span><strong>${esc(center?.citywideCoordinateCount ?? '—')}건</strong></p>
+          <p><span>${esc(area.dong)} 경로당</span><strong>${esc(center?.facilityCountInsideDong ?? '—')}곳</strong></p>
+          <p><span>최근접거리 중앙값</span><strong>${center ? `${esc(Math.round(center.nearestMedianM))}m` : '—'}</strong></p>
+          <p><span>15분 면적격자</span><strong>${center ? `${esc(Number(center.coverage15MinPct).toFixed(1))}%` : '—'}</strong></p>
+        </div>
+        <p>최신 594행과 좌표표 결합: 자동 좌표완성 ${esc(linkage.coordinate_complete ?? '—')}건 · 수동검토 ${esc(linkage.manual_review ?? '—')}건 · 미매칭 ${esc(linkage.unmatched ?? '—')}건.</p>
+        <small>${esc(snapshot.interpretation)} ${esc(snapshot.criticalDisclaimer)}</small>
+      </aside>`;
+  }
+
+  function renderWelfareDestinationSensitivity(model, area) {
+    const snapshot = model.welfareDestinationSensitivitySnapshot;
+    if (!snapshot) return '';
+    const selected = snapshot.selectedArea;
+    const stableCore = asList(snapshot.stableCoreDongs).join('·');
+    return `
+      <aside class="guided-destination-sensitivity" aria-label="${esc(area.dong)} 복지 목적지 정의 민감도">
+        <h2>목적지를 바꾸면 후보도 바뀝니다.</h2>
+        <div class="guided-welfare-coordinate-grid">
+          <p><span>복지 목적지 시나리오</span><strong>${esc(snapshot.scenarioCount)}개</strong></p>
+          <p><span>기준 후보 최대 교체</span><strong>${esc(snapshot.maximumReplacementCount)}/8</strong></p>
+          <p><span>최저 집합 유사도</span><strong>J ${esc(Number(snapshot.minimumJaccard).toFixed(3))}</strong></p>
+          <p><span>${esc(area.dong)} 후보 유지</span><strong>${selected ? `${esc(selected.top8ScenarioCount)}/${esc(selected.scenarioCount)}` : '—'}</strong></p>
+        </div>
+        <p>시설항만 교체 ${esc(snapshot.partialScenarioCount)}개와 CAG·시설항을 함께 교체한 ${esc(snapshot.fullScenarioCount)}개를 분리했습니다. 모든 시나리오의 안정핵심은 ${esc(stableCore || '자료 연결 대기')}입니다.</p>
+        <small>${esc(snapshot.interpretation)} ${esc(snapshot.criticalDisclaimer)} 정책효과가 아닙니다.</small>
       </aside>`;
   }
 
@@ -481,9 +540,32 @@
       </aside>`;
   }
 
+  function renderBusNetworkEvidence(model) {
+    const snapshot = model.busNetworkEvidenceSnapshot;
+    if (!snapshot) return '';
+    const needsReview = snapshot.multipleOfficialRows + snapshot.unresolvedNoCandidate;
+    return `
+      <aside class="guided-bus-evidence" aria-label="마을버스 공식 배차표 교차검증">
+        <h2>배차표까지 확인했지만, 현행 운행은 아직 모릅니다.</h2>
+        <div class="guided-bus-evidence-grid">
+          <p><span>마을노선 분모</span><strong>${esc(snapshot.routeDenominator)}개</strong></p>
+          <p><span>번호 후보 확인</span><strong>${esc(snapshot.routeNumberCandidates)}개</strong></p>
+          <p><span>단일 공식행</span><strong>${esc(snapshot.uniqueOfficialRows)}개</strong></p>
+          <p><span>추가 확인</span><strong>${esc(needsReview)}개</strong></p>
+        </div>
+        <p>복수 공식행 ${esc(snapshot.multipleOfficialRows)}개 · 후보 없음 ${esc(snapshot.unresolvedNoCandidate)}개. 2023 BMS는 ${esc(snapshot.historicalBms.linkedRoutes)}/${esc(snapshot.historicalBms.routeDenominator)}개 노선만 역사적으로 연결됐습니다.</p>
+        <small>${esc(snapshot.interpretation)} ${esc(snapshot.historicalBms.interpretation)}</small>
+      </aside>`;
+  }
+
   function policyAnswer(state, questionId) {
     const answers = state.policyAnswers || state.alternativeAnswers || state.answers || {};
     return ['yes', 'no'].includes(answers[questionId]) ? answers[questionId] : 'unknown';
+  }
+
+  function policyReviewed(state, questionId) {
+    const reviewed = asList(state.policyReviewedQuestions || state.guidedReviewedQuestions);
+    return reviewed.includes(questionId) || ['yes', 'no'].includes(policyAnswer(state, questionId));
   }
 
   function renderAlternativeList(model) {
@@ -506,7 +588,8 @@
     );
     const question = questions[questionIndex];
     const answer = policyAnswer(state, question.id);
-    const answeredCount = questions.filter((item) => policyAnswer(state, item.id) !== 'unknown').length;
+    const reviewed = policyReviewed(state, question.id);
+    const answeredCount = questions.filter((item) => policyReviewed(state, item.id)).length;
     const isLast = questionIndex === questions.length - 1;
     return `
       <section class="guided-page guided-page-policy" aria-labelledby="guided-title">
@@ -529,7 +612,7 @@
                 ['unknown', '아직 모름'],
                 ['yes', '예'],
                 ['no', '아니오'],
-              ].map(([value, label]) => `<label><input type="radio" name="guided-policy-answer-${esc(question.id)}" value="${value}" data-action="guided-policy-answer" data-guided-question="${esc(question.id)}" data-guided-answer="${value}"${checkedAttribute(answer === value)}><span>${label}</span></label>`).join('')}
+              ].map(([value, label]) => `<label><input type="radio" name="guided-policy-answer-${esc(question.id)}" value="${value}" data-action="guided-policy-answer" data-guided-question="${esc(question.id)}" data-guided-answer="${value}"${checkedAttribute(reviewed && answer === value)}><span>${label}</span></label>`).join('')}
             </div>
           </fieldset>
         </div>
@@ -564,6 +647,8 @@
   function renderStepSix(model, state) {
     const area = selectedArea(model);
     const items = asList(model.finalChecks || model.fieldChecks || model.unknownChecks, DEFAULT_FIELD_CHECKS);
+    const questions = asList(model.policyQuestions || model.alternativeQuestions, DEFAULT_POLICY_QUESTIONS);
+    const answerLabels = { yes: '예', no: '아니오', unknown: '아직 모름' };
     return `
       <section class="guided-page guided-page-review" aria-labelledby="guided-title">
         ${eyebrow(6, '근거·한계·질문을 한 파일로 묶습니다')}
@@ -575,6 +660,11 @@
             <section><h2>1. 조사 대상</h2><p><strong>${esc(area.dong)}</strong><span>${esc(area.district)}</span><em>추가 현장조사</em></p></section>
             <section><h2>2. 공개데이터에서 확인한 신호</h2>${renderCompactSignals(model) || '<p class="guided-inline-empty">신호 요약 연결 대기</p>'}</section>
             <section><h2>3. 현장에서 확인할 항목</h2><div class="guided-final-checks">${items.map((item) => renderFieldCheck(item, state, 'fieldChecks')).join('')}</div></section>
+            <section><h2>4. 대안별 조사 답변</h2><ul class="guided-answer-summary">${questions.map((question) => {
+              const reviewed = policyReviewed(state, question.id);
+              const answer = reviewed ? answerLabels[policyAnswer(state, question.id)] : '미응답';
+              return `<li><span><strong>${esc(question.alternative || '정책 대안')}</strong>${esc(question.text)}</span><em class="${reviewed ? '' : 'is-unanswered'}">${esc(answer)}</em></li>`;
+            }).join('')}</ul><p class="guided-answer-summary-note">답변은 대안을 자동 추천하지 않으며, 교통·복지 담당자의 공동 검토 자료로만 사용합니다.</p></section>
             <p class="guided-document-limit">개인 위치·실제 OD·정책 효과는 포함하지 않습니다.</p>
           </div>
 
@@ -586,12 +676,11 @@
 
         <p class="guided-boundary-note">자유입력란이 없어 저장 파일에 이름·주소·연락처가 들어가지 않습니다.</p>
         ${renderSavedCard(model, state)}
-        ${actionBar({
-          previousStep: 5,
-          action: 'guided-save',
-          step: 6,
-          label: state.guidedSavedAt ? '같은 내용을 다시 저장합니다' : `${area.dong} 현장조사 체크리스트 저장`,
-        })}
+        <div class="guided-action-bar guided-save-actions">
+          <button class="guided-back-link" type="button" data-action="guided-prev" data-guided-step="5"><span aria-hidden="true">←</span> 이전 화면</button>
+          <button class="guided-primary-action" type="button" data-action="guided-print"><span>인쇄·PDF로 저장</span><span aria-hidden="true">▣</span></button>
+          <button class="guided-data-action" type="button" data-action="guided-save">데이터용 JSON 저장</button>
+        </div>
       </section>`;
   }
 

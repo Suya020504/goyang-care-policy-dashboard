@@ -299,7 +299,93 @@
     });
   }
 
-  function buildAreaModel(data, pro, code = DEFAULT_DONG_CODE, welfare = {}) {
+  function welfareCoordinateSnapshot(coordinates, area) {
+    const metadata = coordinates?.metadata || {};
+    const rows = Array.isArray(coordinates?.areaAccessibility) ? coordinates.areaAccessibility : [];
+    const areaRows = rows.filter((row) => row.adminDong === area.dong);
+    if (!areaRows.length) return null;
+    const findLayer = (serviceLayer) => areaRows.find((row) => row.serviceLayer === serviceLayer) || null;
+    const seniorCenter = findLayer('senior_centers');
+    const seniorWelfare = findLayer('senior_welfare_centers');
+    const careProvider = findLayer('elder_care_providers');
+    return Object.freeze({
+      source: metadata.source || null,
+      checkedAt: metadata.checkedAt || null,
+      linkage: Object.freeze({ ...(metadata.linkage || {}) }),
+      seniorCenter: seniorCenter ? Object.freeze({ ...seniorCenter }) : null,
+      seniorWelfare: seniorWelfare ? Object.freeze({ ...seniorWelfare }) : null,
+      careProvider: careProvider ? Object.freeze({ ...careProvider }) : null,
+      interpretation: '공식 공개좌표로 계산한 100m 면적격자의 직선거리 대리값이며 주민 도달률·도로망 이동시간·고양온돌 62개 서비스 접근성이 아닙니다.',
+      criticalDisclaimer: metadata.criticalDisclaimer || '경로당·복지관·노인돌봄 수행기관을 고양온돌 62개 서비스 위치와 동일시하지 않습니다.',
+    });
+  }
+
+  function welfareDestinationSensitivitySnapshot(sensitivity, area) {
+    const scenarios = (Array.isArray(sensitivity?.scenarios) ? sensitivity.scenarios : [])
+      .filter((row) => row.replacement_scope !== 'baseline_medical');
+    if (!scenarios.length) return null;
+
+    const partialScenarios = scenarios.filter((row) => row.replacement_scope === 'partial_facility_term_only');
+    const fullScenarios = scenarios.filter((row) => row.replacement_scope === 'full_cag_and_facility_term');
+    const stabilityRows = Array.isArray(sensitivity?.candidateStability) ? sensitivity.candidateStability : [];
+    const selectedStability = stabilityRows.find((row) => row.dong_name === area.dong) || null;
+    const stableCoreDongs = stabilityRows
+      .filter((row) => row.stable_all_scenarios)
+      .map((row) => row.dong_name);
+    const versionRows = Array.isArray(sensitivity?.seniorCenterVersionComparison)
+      ? sensitivity.seniorCenterVersionComparison
+      : [];
+    const versionJaccards = versionRows
+      .map((row) => Number(row.top8_jaccard_public585_vs_linked570))
+      .filter(Number.isFinite);
+
+    return Object.freeze({
+      scenarioCount: scenarios.length,
+      partialScenarioCount: partialScenarios.length,
+      fullScenarioCount: fullScenarios.length,
+      minimumJaccard: Math.min(...scenarios.map((row) => Number(row.jaccard_vs_baseline_top8))),
+      maximumReplacementCount: Math.max(...scenarios.map((row) => Number(row.replacement_count))),
+      stableCoreDongs: Object.freeze(stableCoreDongs),
+      selectedArea: selectedStability ? Object.freeze({
+        dong: selectedStability.dong_name,
+        top8ScenarioCount: finite(selectedStability.top8_scenario_count),
+        scenarioCount: finite(selectedStability.scenario_count),
+        stableAllScenarios: Boolean(selectedStability.stable_all_scenarios),
+      }) : null,
+      seniorCenterVersionMinimumJaccard: versionJaccards.length ? Math.min(...versionJaccards) : null,
+      interpretation: '목적지 대리층을 바꾸면 후보집합도 달라집니다. 시설항만 교체한 경우와 CAG·시설항을 함께 교체한 경우를 분리해 읽습니다.',
+      criticalDisclaimer: sensitivity?.metadata?.evidenceBoundary
+        || '공식 고양온돌 62개 서비스 제공위치·이용실적·운영제약이 아닌 공개 복지목적지 대리층 민감도입니다.',
+      versionBoundary: sensitivity?.metadata?.seniorCenterVersionBoundary || null,
+    });
+  }
+
+  function busNetworkEvidenceSnapshot(evidence) {
+    const headway = evidence?.headway;
+    const historicalBms = evidence?.historicalBms;
+    if (!headway || !historicalBms) return null;
+    return Object.freeze({
+      sourceDate: headway.sourceDate || null,
+      routeDenominator: finite(headway.localVillageRouteDenominator),
+      routeNumberCandidates: finite(headway.officialRouteNumberCandidates),
+      uniqueOfficialRows: finite(headway.uniqueOfficialRows),
+      multipleOfficialRows: finite(headway.multipleOfficialRows),
+      unresolvedNoCandidate: finite(headway.unresolvedNoCandidate),
+      unresolvedRoutes: Object.freeze([...(headway.unresolvedRoutes || [])]),
+      interpretation: headway.interpretation || '',
+      historicalBms: Object.freeze({ ...historicalBms }),
+    });
+  }
+
+  function buildAreaModel(
+    data,
+    pro,
+    code = DEFAULT_DONG_CODE,
+    welfare = {},
+    welfareCoordinates = {},
+    busNetworkEvidence = {},
+    welfareDestinationSensitivity = {},
+  ) {
     if (!data || !pro) throw new TypeError('안내형 모델에는 DATA와 PRO가 모두 필요합니다.');
 
     const { candidates, selected, usedFallback } = findCandidate(data, code);
@@ -315,6 +401,12 @@
     const villageSnapshot = villageBusSnapshot(pro, selected);
     const accessibilityScenario = accessibilityScenarioSnapshot(pro, selected);
     const welfareSnapshot = welfareDestinationSnapshot(welfare, selected);
+    const welfareCoordinatesSnapshot = welfareCoordinateSnapshot(welfareCoordinates, selected);
+    const busEvidenceSnapshot = busNetworkEvidenceSnapshot(busNetworkEvidence);
+    const welfareSensitivitySnapshot = welfareDestinationSensitivitySnapshot(
+      welfareDestinationSensitivity,
+      selected,
+    );
 
     const baselineDongs = Array.isArray(baseline.candidateDongs) ? baseline.candidateDongs : [];
     const candidateDongs = candidates.map((area) => area.dong);
@@ -478,23 +570,45 @@
       villageBusSnapshot: villageSnapshot,
       accessibilityScenario,
       welfareDestinationSnapshot: welfareSnapshot,
+      welfareCoordinateSnapshot: welfareCoordinatesSnapshot,
+      welfareDestinationSensitivitySnapshot: welfareSensitivitySnapshot,
+      busNetworkEvidenceSnapshot: busEvidenceSnapshot,
+      currentDrtContext: Object.freeze({
+        serviceZoneCount: finite(city.officialDrtServiceZones, 4),
+        vehicleSnapshot: finite(city.drtVehicleSnapshot, 14),
+        asOf: city.drtVehicleSnapshotDate || null,
+        mixedOperationZones: Object.freeze(['식사', '덕은', '향동']),
+        fullDayFlexibleZone: '고봉',
+        mixedOperationDescription: '출퇴근 고정노선 + 그 외 시간 호출형',
+        fullDayFlexibleDescription: '06~24시 전일 호출형',
+        interpretation: '기존 똑버스는 통근·신도시형 운영과 전일 호출형이 섞여 있습니다. 돌봄 이동 후보는 필수 목적지 도달 여부를 별도로 검증해야 합니다.',
+        limitation: '운영권역은 행정동과 같은 단위가 아니며 이용성과·정책효과를 뜻하지 않습니다.',
+      }),
       dataAcquisition: Object.freeze([
         Object.freeze({
           status: '확보',
-          label: '정류장과 정적 경유노선',
-          detail: '2025-08-25 정류장 CSV를 분석에 사용했습니다.',
+          label: '정류장·정적 경유노선·계획 배차표',
+          detail: busEvidenceSnapshot
+            ? `2025-08 정류장과 2024-12 계획 배차표를 교차검증했습니다. 마을노선 ${busEvidenceSnapshot.routeDenominator}개 중 ${busEvidenceSnapshot.uniqueOfficialRows}개만 단일 공식행으로 바로 연결됩니다.`
+            : '2025-08-25 정류장 CSV를 분석에 사용했습니다.',
         }),
         Object.freeze({
           status: '목록 확보',
           label: '경로당·노인종합복지관 목적지 후보',
           detail: welfareSnapshot
-            ? `공식 Excel ${welfareSnapshot.workbookRecordCount}행과 복지관 ${welfareSnapshot.seniorWelfareCenterCount}곳을 확인했습니다. ${selected.dong} 경로당은 ${welfareSnapshot.selectedDongCount}곳이며 좌표 접근성은 대기 중입니다.`
+            ? welfareCoordinatesSnapshot
+              ? welfareSensitivitySnapshot
+                ? `최신 공식 Excel ${welfareSnapshot.workbookRecordCount}행과 공개 좌표표를 결합하고, 복지 목적지 정의 ${welfareSensitivitySnapshot.scenarioCount}개로 후보 민감도를 재계산했습니다. 실제 62개 서비스 위치는 아닙니다.`
+                : `최신 공식 Excel ${welfareSnapshot.workbookRecordCount}행과 공개 좌표표를 결합했습니다. ${selected.dong} 경로당은 ${welfareSnapshot.selectedDongCount}곳이며, 좌표 결합은 검토 상태를 나눠 공개합니다.`
+              : `공식 Excel ${welfareSnapshot.workbookRecordCount}행과 복지관 ${welfareSnapshot.seniorWelfareCenterCount}곳을 확인했습니다. ${selected.dong} 경로당은 ${welfareSnapshot.selectedDongCount}곳이며 좌표 접근성은 대기 중입니다.`
             : '공식 목록의 비식별 집계를 연결해야 합니다.',
         }),
         Object.freeze({
-          status: 'API 필요',
-          label: '노선 운행정보와 복지목적지 좌표',
-          detail: '경기도 버스·TAGO로 순서·배차·형상을, 별도 Juso 승인키로 목적지 좌표를 수집해야 합니다.',
+          status: welfareCoordinatesSnapshot ? '부분 확보' : 'API 필요',
+          label: '현행 노선형상·실제 운행과 복지목적지 운영조건',
+          detail: welfareCoordinatesSnapshot
+            ? '복지 목적지 공개좌표와 후보 민감도는 계산했습니다. 실제 62개 서비스의 위치·시간·자격·수용량과 현행 노선 순서·형상·실제 배차·방향은 더 확인해야 합니다.'
+            : '경기도 버스·TAGO로 순서·배차·형상을, 별도 Juso 승인키로 목적지 좌표를 수집해야 합니다.',
         }),
         Object.freeze({
           status: '기관 협조',
@@ -522,7 +636,7 @@
     return date.toISOString();
   }
 
-  function buildChecklistExport({ model, selectedChecks = [], policyAnswers = {}, savedAt } = {}) {
+  function buildChecklistExport({ model, selectedChecks = [], policyAnswers = {}, reviewedQuestionIds = [], savedAt } = {}) {
     if (!model?.selectedArea) throw new TypeError('체크리스트 저장에는 buildAreaModel 결과가 필요합니다.');
     const selectedIds = new Set((Array.isArray(selectedChecks) ? selectedChecks : [])
       .map((item) => (typeof item === 'string' ? item : item?.id))
@@ -558,6 +672,15 @@
           uniqueRouteNames: model.villageBusSnapshot.uniqueRouteCount,
           limitation: model.villageBusSnapshot.interpretation,
         } : null,
+        villageBusHeadwayCrosscheck: model.busNetworkEvidenceSnapshot ? {
+          sourceDate: model.busNetworkEvidenceSnapshot.sourceDate,
+          routeDenominator: model.busNetworkEvidenceSnapshot.routeDenominator,
+          routeNumberCandidates: model.busNetworkEvidenceSnapshot.routeNumberCandidates,
+          uniqueOfficialRows: model.busNetworkEvidenceSnapshot.uniqueOfficialRows,
+          multipleOfficialRows: model.busNetworkEvidenceSnapshot.multipleOfficialRows,
+          unresolvedNoCandidate: model.busNetworkEvidenceSnapshot.unresolvedNoCandidate,
+          limitation: model.busNetworkEvidenceSnapshot.interpretation,
+        } : null,
         accessibilityScenario: model.accessibilityScenario ? {
           status: model.accessibilityScenario.status,
           referenceMedianMinutes: model.accessibilityScenario.referenceMedianMinutes,
@@ -577,6 +700,19 @@
           coordinateCount: model.welfareDestinationSnapshot.coordinateCount,
           limitation: model.welfareDestinationSnapshot.interpretation,
         } : null,
+        welfareDestinationSensitivity: model.welfareDestinationSensitivitySnapshot ? {
+          scenarioCount: model.welfareDestinationSensitivitySnapshot.scenarioCount,
+          partialScenarioCount: model.welfareDestinationSensitivitySnapshot.partialScenarioCount,
+          fullScenarioCount: model.welfareDestinationSensitivitySnapshot.fullScenarioCount,
+          minimumJaccard: model.welfareDestinationSensitivitySnapshot.minimumJaccard,
+          maximumReplacementCount: model.welfareDestinationSensitivitySnapshot.maximumReplacementCount,
+          stableCoreDongs: [...model.welfareDestinationSensitivitySnapshot.stableCoreDongs],
+          selectedArea: model.welfareDestinationSensitivitySnapshot.selectedArea
+            ? { ...model.welfareDestinationSensitivitySnapshot.selectedArea }
+            : null,
+          seniorCenterVersionMinimumJaccard: model.welfareDestinationSensitivitySnapshot.seniorCenterVersionMinimumJaccard,
+          limitation: model.welfareDestinationSensitivitySnapshot.criticalDisclaimer,
+        } : null,
         inclusionIsProbability: false,
       },
       fieldChecks: CHECKLIST_ITEMS.map((item) => ({
@@ -591,12 +727,18 @@
         purpose: item.description,
         handlingRule: '개인을 식별하지 않는 집계자료만 이 파일에 결합',
       })),
-      alternativeQuestions: POLICY_QUESTIONS.map((item) => ({
+      alternativeQuestions: POLICY_QUESTIONS.map((item) => {
+        const reviewed = reviewedQuestionIds.includes(item.id) || ['yes', 'no'].includes(policyAnswers?.[item.id]);
+        return {
         id: item.id,
         question: item.text,
         alternative: item.alternative,
-        answer: ['yes', 'no'].includes(policyAnswers?.[item.id]) ? policyAnswers[item.id] : 'unknown',
-      })),
+        reviewed,
+        answer: reviewed
+          ? (['yes', 'no'].includes(policyAnswers?.[item.id]) ? policyAnswers[item.id] : 'unknown')
+          : 'unanswered',
+        };
+      }),
       humanReview: {
         status: 'investigate',
         notice: '개인정보·인증정보 입력 없이 교통·복지 담당자가 공동 검토',

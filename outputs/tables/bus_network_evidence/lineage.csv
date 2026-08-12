@@ -1,0 +1,4 @@
+﻿artifact,inputs,transform,exclusions
+headway_route_matches.csv,14_village_bus_route_presence.csv + private headway CSV,NFKC; trim; uppercase; trailing parenthetical removal; numeric-prefix leading-zero removal; exact-key join,no substring/fuzzy fallback; multiple candidates not reduced to one value
+bms_route_linkage.csv,private 2023 route map + private 2023 stop order ZIP + private 2025 processed bus stops,exact normalized route-number candidates then station-ID overlap,zero-overlap and tied candidates unresolved
+bms_linked_stop_points.csv,selected historical BMS route_id + 2025 public-stop coordinates,private join on stop_id; then route/stop IDs and stop names removed; min/max historical sequence retained,not a complete line geometry or current route sequence

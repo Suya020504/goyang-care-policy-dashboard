@@ -1,0 +1,11 @@
+﻿routeName,normalizedRouteNumber,reviewStatus,candidateCount,candidateEvidence,requiredAction,excludedFromSingleHeadway
+011,11,matched_multiple_candidates,2,명성운수㈜ / 11 / 성석동→행신역 / 06~9(9~12) || (주)자안운수 / 11 / 행주나루터→화정역 / 10(12~14),현행 노선ID·운행업체로 식별,yes
+055,55,matched_multiple_candidates,2,서울여객㈜ / 55 / 대화공영차고지→고봉동행정복지센터 / 25~30 || (주)여산교통 / 055(통합) / 삼성아파트(1군단)→푸른마을 10단지 / 30(40~50),현행 노선ID·운행업체로 식별,yes
+057,57,matched_multiple_candidates,2,"서울여객㈜ / 57 / 대화공영차고지→불광역 / 40~60 || 대화교통 / 57 / 가좌마을,킨스벽산A516동→일산동구청 / 06~10(08~11)",현행 노선ID·운행업체로 식별,yes
+065,65,matched_multiple_candidates,2,"명성운수㈜ / 65 / 교하차고지→현대백화점(신촌전철역쪽) / 20~30 || 대림교통㈜ / 65 / 서정마을2,4단지→화정역 / 10~15",현행 노선ID·운행업체로 식별,yes
+066,66,matched_multiple_candidates,2,"명성운수㈜ / 66 / 교하차고지→모래내시장,가좌역(중) / 11~14(16~18) || 신일산교통 / 66 / 성석동차고지→밤가시마을 / 10~12",현행 노선ID·운행업체로 식별,yes
+067,67,matched_multiple_candidates,2,명성운수㈜ / 67 / 교하차고지→화정역 / 15~20 || 신일산운수 주식회사 / 67 / 장항지구(장항행복주택아파트)→마두역 / 15~20,현행 노선ID·운행업체로 식별,yes
+069,69,matched_multiple_candidates,2,(주)백마운수 / 69 / 둥지마을베송쥬쥬→화정역 3호선 / 18~20(20~40) || 신일산운수 주식회사 / 69 / 신평동(SK주유소)→능곡역 / 30~40,현행 노선ID·운행업체로 식별,yes
+097,97,matched_multiple_candidates,2,고양교통㈜ / 97 / 김포대학→행신역 / 15~20(55~60) || ㈜성우교통 / 97 / 식사동→원당역 / 15~18,현행 노선ID·운행업체로 식별,yes
+098,98,matched_multiple_candidates,2,(주)백마운수 / 98 / 위시티1단지후문.양일초교→현대백화점 / 13~15 || ㈜성우교통 / 98 / 데이앤뷰1단지→롯데백화점 / 13~16,현행 노선ID·운행업체로 식별,yes
+099,99,matched_multiple_candidates,2,"(주)백마운수 / 99 / 약산마을→빛마루.EBS / 12~15(15~28) || ㈜성우교통 / 99 / 위시티1,2단지→원당역 / 10~12",현행 노선ID·운행업체로 식별,yes

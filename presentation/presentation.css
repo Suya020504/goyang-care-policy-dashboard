@@ -105,6 +105,7 @@ h2 { max-width: 1370px; margin-bottom: 0; color: var(--navy); font-size: 48px; l
 .map-legend { display: flex; align-items: center; gap: 18px; margin-top: 14px; color: var(--muted); font-size: 14px; }
 .map-legend i { display: inline-block; width: 42px; height: 10px; margin-right: 8px; }
 .legend-low { background: #eaf3fc; }.legend-high { background: var(--navy); }
+.legend-outline { background: #fff; border: 3px solid var(--orange); }
 .map-legend strong { margin-left: auto; color: var(--navy); font-size: 18px; }
 
 .case-layout { display: grid; grid-template-columns: 47% 53%; gap: 48px; height: 625px; }
@@ -161,8 +162,10 @@ h2 { max-width: 1370px; margin-bottom: 0; color: var(--navy); font-size: 48px; l
 .data-gate strong, .decision-gate strong { color: var(--teal); font-size: 18px; }.data-gate span, .decision-gate span { font-size: 17px; }.data-gate em, .decision-gate em { color: var(--orange); font-size: 15px; font-style: normal; font-weight: 800; }
 
 .drt-layout { display: grid; grid-template-columns: 52% 48%; gap: 42px; height: 615px; }
-.drt-map { display: grid; place-items: center; background: var(--paper); border: 1px solid var(--line); }
+.drt-map-wrap { position: relative; min-width: 0; }
+.drt-map { display: grid; width: 100%; height: 100%; place-items: center; background: var(--paper); border: 1px solid var(--line); }
 .drt-map svg { width: 95%; height: 95%; }
+.drt-map-wrap > p { position: absolute; left: 22px; bottom: 22px; margin: 0; padding: 12px 16px; border: 2px solid var(--orange); color: var(--orange); background: rgba(255,255,255,.96); font-size: 16px; font-weight: 800; line-height: 1.35; }
 .drt-copy { display: flex; flex-direction: column; justify-content: center; }
 .drt-number { display: grid; grid-template-columns: 100px 1fr; align-items: center; padding: 22px 0; border-bottom: 1px solid var(--line); }
 .drt-number strong { color: var(--blue); font-size: 55px; }.drt-number span { color: var(--ink); font-size: 19px; font-weight: 700; }
@@ -211,6 +214,11 @@ h2 { max-width: 1370px; margin-bottom: 0; color: var(--navy); font-size: 48px; l
 .data-dictionary > div { grid-template-columns: 19% 43% 20% 18%; min-height: 74px; font-size: 18px; }.data-dictionary time { color: var(--muted); }.data-dictionary em { color: var(--teal); }
 .candidate-table { min-height: 600px; }.candidate-table table { width: 100%; border-collapse: collapse; border-top: 2px solid var(--navy); font-size: 16px; }.candidate-table th, .candidate-table td { padding: 12px 15px; border-bottom: 1px solid var(--line); text-align: right; }.candidate-table th:first-child, .candidate-table td:first-child { text-align: left; }.candidate-table th { color: #fff; background: var(--navy); font-size: 14px; }.candidate-table tr.highlight td { background: var(--teal-soft); }.candidate-table small { color: var(--muted); }
 .lineage { display: grid; grid-template-columns: 1fr 50px 1fr 50px 1fr; gap: 12px 0; align-items: stretch; margin-top: 40px; }.lineage div { min-height: 130px; padding: 25px; border-top: 4px solid var(--blue); background: var(--paper); }.lineage strong { display: block; color: var(--navy); font-size: 20px; }.lineage span { display: block; margin-top: 14px; color: var(--muted); font-size: 15px; }.lineage i { align-self: center; color: #98a6b6; font-size: 26px; font-style: normal; text-align: center; }.formula { margin-top: 32px; padding: 22px; color: var(--navy); background: var(--blue-soft); font: 800 23px ui-monospace, Consolas, monospace; text-align: center; }
+[data-slide="21"] .lineage { gap: 8px 0; margin-top: 18px; }
+[data-slide="21"] .lineage div { min-height: 92px; padding: 17px 20px; }
+[data-slide="21"] .lineage strong { font-size: 17px; }
+[data-slide="21"] .lineage span { margin-top: 8px; font-size: 13px; }
+[data-slide="21"] .formula { margin-top: 16px; padding: 15px; font-size: 19px; }
 .crosswalk > div { grid-template-columns: 30% 40% 30%; min-height: 84px; font-size: 20px; }
 .known-unknown { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 60px 90px 40px; }.known-unknown > div { min-height: 340px; padding: 35px; border-top: 5px solid var(--teal); background: var(--paper); }.known-unknown > div:last-child { border-color: var(--orange); }.known-unknown strong { color: var(--navy); font-size: 28px; }.known-unknown ul { margin-top: 35px; padding-left: 24px; font-size: 19px; line-height: 2.2; }
 .stop-banner { margin: 22px 90px 0; padding: 21px 25px; color: var(--navy); background: #fdf0ef; border-left: 5px solid var(--orange); font-size: 20px; text-align: center; }.stop-banner strong { margin-right: 20px; color: var(--orange); }
@@ -220,7 +228,7 @@ h2 { max-width: 1370px; margin-bottom: 0; color: var(--navy); font-size: 48px; l
 
 .deck-progress { position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(11,46,89,.12); }.deck-progress i { display: block; width: 0; height: 100%; background: var(--teal); transition: width .18s ease; }
 .deck-controls { position: fixed; z-index: 30; left: 50%; bottom: 18px; display: flex; align-items: center; gap: 6px; padding: 7px; background: rgba(11,46,89,.94); transform: translateX(-50%); }
-.deck-controls button, .deck-controls a, .deck-controls span { display: grid; min-width: 42px; height: 36px; place-items: center; padding: 0 11px; border: 0; color: #fff; background: transparent; font-size: 13px; text-decoration: none; }.deck-controls button:hover, .deck-controls a:hover { background: rgba(255,255,255,.13); }.deck-controls span { min-width: 72px; color: #c6d3e1; }
+.deck-controls button, .deck-controls a, .deck-controls span { display: grid; min-width: 44px; height: 44px; place-items: center; padding: 0 8px; border: 0; color: #fff; background: transparent; font-size: 13px; text-decoration: none; white-space: nowrap; }.deck-controls button:hover, .deck-controls a:hover { background: rgba(255,255,255,.13); }.deck-controls span { min-width: 72px; color: #c6d3e1; }
 body.capture .deck-controls, body.capture .deck-progress, body.presenter-embed .deck-controls, body.presenter-embed .deck-progress { display: none; }
 
 svg .axis { fill: #718091; font-size: 13px; }.svg-label { fill: var(--ink); font-size: 15px; font-weight: 750; }.svg-value { fill: var(--navy); font-size: 16px; font-weight: 850; }.svg-small { fill: var(--muted); font-size: 13px; }.svg-title { fill: var(--navy); font-size: 17px; font-weight: 800; }

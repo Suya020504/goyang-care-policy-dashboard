@@ -5,6 +5,9 @@
   const BOUNDARIES = window.DDOL_V2_BOUNDARIES;
   const PRO = window.DDOL_PRO_ANALYSIS || null;
   const WELFARE = window.DDOL_WELFARE_DESTINATIONS || null;
+  const WELFARE_COORDINATES = window.DDOL_WELFARE_COORDINATE_LAYERS || null;
+  const WELFARE_DESTINATION_SENSITIVITY = window.DDOL_WELFARE_DESTINATION_SENSITIVITY || null;
+  const BUS_NETWORK_EVIDENCE = window.DDOL_BUS_NETWORK_EVIDENCE || null;
   const CHARTS = window.DdolCharts;
   const ENGINE = window.PolicyEngine;
   const GUIDED = window.DDOL_GUIDED_MODEL;
@@ -399,6 +402,10 @@
       accessibleVehicle: 'unknown',
       ...(guidedStored.answers || {}),
     };
+    const questionIds = GUIDED.POLICY_QUESTIONS.map((item) => item.id);
+    const guidedReviewedQuestions = Array.isArray(guidedStored.reviewedQuestions)
+      ? guidedStored.reviewedQuestions.filter((id) => questionIds.includes(id))
+      : questionIds.filter((id) => ['yes', 'no'].includes(guidedAnswers[id]));
     const guidedStep = clamp(numberValue(params.get('step') || guidedStored.step || 1), 1, 6);
     const guidedQuestionIndex = clamp(numberValue(params.get('q') || guidedStored.questionIndex || 0), 0, GUIDED.POLICY_QUESTIONS.length - 1);
     return {
@@ -409,6 +416,7 @@
       guidedQuestionIndex,
       guidedChecks,
       guidedAnswers,
+      guidedReviewedQuestions,
       guidedSavedAt: null,
       selectedCode: selected.code,
       mapAreaCode: mapArea.code,
@@ -461,6 +469,7 @@
       selectedCode: state.selectedCode,
       checks: state.guidedChecks,
       answers: state.guidedAnswers,
+      reviewedQuestions: state.guidedReviewedQuestions,
       questionIndex: state.guidedQuestionIndex,
       feedbackFlowVersion: 2,
     };
@@ -559,7 +568,15 @@
   }
 
   function buildGuidedModel() {
-    const model = GUIDED.buildAreaModel(DATA, PRO, state.selectedCode, WELFARE);
+    const model = GUIDED.buildAreaModel(
+      DATA,
+      PRO,
+      state.selectedCode,
+      WELFARE,
+      WELFARE_COORDINATES,
+      BUS_NETWORK_EVIDENCE,
+      WELFARE_DESTINATION_SENSITIVITY,
+    );
     const signalMetrics = model.signals.map((signal) => ({
       ...signal,
       areaDisplay: signal.id === 'nearest-facility' ? km(signal.value) : signal.display,
@@ -578,6 +595,7 @@
       ...model,
       productSubtitle: '고양시 교통·복지 현장조사 지원',
       areaCount: allAreas.length,
+      eligibleAreaCount: numberValue(PRO.baseline?.eligibleAreaCount, 41),
       candidateCount: candidates.length,
       signalMetrics,
       signalHeadline: model.evidenceFraming?.headline
@@ -616,6 +634,7 @@
         checks: state.guidedChecks,
         answers: state.guidedAnswers,
         policyAnswers: state.guidedAnswers,
+        policyReviewedQuestions: state.guidedReviewedQuestions,
         policyQuestionIndex: state.guidedQuestionIndex,
         storageAvailable: guidedStorageAvailable,
         savedAt: state.guidedSavedAt || null,
@@ -1576,6 +1595,7 @@
         irregularDemand: 'unknown',
         accessibleVehicle: 'unknown',
       },
+      guidedReviewedQuestions: [],
       guidedSavedAt: null,
     }, true, true);
     showToast('현장조사 안내를 처음부터 시작합니다.');
@@ -1588,6 +1608,7 @@
       model,
       selectedChecks: state.guidedChecks,
       policyAnswers: state.guidedAnswers,
+      reviewedQuestionIds: state.guidedReviewedQuestions,
       savedAt,
     });
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
@@ -1742,6 +1763,7 @@
       const answer = button.dataset.guidedAnswer;
       updateState({
         guidedAnswers: { ...state.guidedAnswers, [question]: answer },
+        guidedReviewedQuestions: [...new Set([...state.guidedReviewedQuestions, question])],
         guidedSavedAt: null,
       });
       window.setTimeout(() => document.querySelector(

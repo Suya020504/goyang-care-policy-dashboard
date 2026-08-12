@@ -71,8 +71,15 @@ async function main() {
   await audience.goto(`${rootUrl('presentation/index.html')}?slide=10`, { waitUntil: 'load' });
   assert.match(await audience.locator('.slide.is-active').innerText(), /127\s*\/\s*129/);
   await audience.goto(`${rootUrl('presentation/index.html')}?slide=11`, { waitUntil: 'load' });
-  assert.match(await audience.locator('.slide.is-active').innerText(), /594/);
-  assert.equal(await audience.locator('.welfare-numbers .zero strong').innerText(), '0');
+  assert.match(await audience.locator('.slide.is-active').innerText(), /11/);
+  assert.match(await audience.locator('.slide.is-active').innerText(), /4\s*\/\s*8/);
+  assert.match(await audience.locator('.slide.is-active').innerText(), /관산동 후보 유지/);
+  assert.match(await audience.locator('.slide.is-active').innerText(), /11\s*\/\s*11/);
+  assert.equal(await audience.locator('#welfare-chart svg').count(), 1);
+  assert.match(
+    await audience.locator('.slide.is-active').innerText(),
+    /실제 62개 서비스 접근성.*아님/,
+  );
   await audience.goto(`${rootUrl('presentation/index.html')}?slide=12`, { waitUntil: 'load' });
   assert.match(await audience.locator('.slide.is-active').innerText(), /효과가 아니라|효과예측이 아니라/);
   await audience.goto(`${rootUrl('presentation/index.html')}?slide=13`, { waitUntil: 'load' });

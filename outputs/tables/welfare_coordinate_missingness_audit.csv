@@ -1,0 +1,4 @@
+﻿group,administrative_dong_count,workbook_records,coordinate_complete_records,coordinate_missing_records,coordinate_missing_rate_pct,candidate_vs_non_candidate_missing_rate_difference_pct_points,candidate_vs_non_candidate_missing_risk_ratio,fisher_exact_odds_ratio,fisher_exact_two_sided_p,interpretation
+baseline_candidate_8,8,118,113,5,4.237,0.246,1.062,1.064,0.8,후보군 좌표 미완성 과집중 신호는 관찰되지 않았으나 개별 행정동의 누락은 별도 확인 필요
+non_candidate_36,36,476,457,19,3.992,0.246,1.062,1.064,0.8,후보군 좌표 미완성 과집중 신호는 관찰되지 않았으나 개별 행정동의 누락은 별도 확인 필요
+all_44_dongs,44,594,570,24,4.04,0.246,1.062,1.064,0.8,후보군 좌표 미완성 과집중 신호는 관찰되지 않았으나 개별 행정동의 누락은 별도 확인 필요

@@ -1,0 +1,7 @@
+﻿replacement_scope,dong_name,public_snapshot_count,latest_workbook_rows,latest_coordinate_complete_count,latest_coordinate_incomplete_count,top8_jaccard_public585_vs_linked570,removed_from_public585_top8,added_vs_public585_top8,rank_global_public585,rank_global_linked570,rank_global_change_linked_minus_public,cag_public585,cag_linked570,facility_dispersion_mean_m_public585,facility_dispersion_mean_m_linked570,evidence_boundary
+partial_facility_term_only,관산동,585,594,570,24,1.0,,,5,5,0,1.2274261933978212,1.2274261933978212,530.5072374203055,531.1781059689621,좌표 미완성 24행의 위치 편향은 제거되지 않음
+partial_facility_term_only,행주동,585,594,570,24,1.0,,,6,6,0,0.7904260084118929,0.7904260084118929,641.0833529928959,644.1840787233531,좌표 미완성 24행의 위치 편향은 제거되지 않음
+partial_facility_term_only,대화동,585,594,570,24,1.0,,,38,38,0,-0.7515588512758407,-0.7515588512758407,294.5260057129069,294.5260057129069,좌표 미완성 24행의 위치 편향은 제거되지 않음
+full_cag_and_facility_term,관산동,585,594,570,24,1.0,,,4,4,0,1.212782728810439,1.2122782329408446,530.5072374203055,531.1781059689621,좌표 미완성 24행의 위치 편향은 제거되지 않음
+full_cag_and_facility_term,행주동,585,594,570,24,1.0,,,7,7,0,0.7012675953049942,0.7012376911391748,641.0833529928959,644.1840787233531,좌표 미완성 24행의 위치 편향은 제거되지 않음
+full_cag_and_facility_term,대화동,585,594,570,24,1.0,,,40,41,1,-0.7188285423755976,-0.7428006909022966,294.5260057129069,294.5260057129069,좌표 미완성 24행의 위치 편향은 제거되지 않음

@@ -1,0 +1,21 @@
+{
+  "analysisQuestion": "의료 목적지를 공개 복지 목적지 대리층으로 바꾸어도 현재 후보 Top8은 안정적인가?",
+  "gridCount": 26595,
+  "adminDongCount": 44,
+  "betaPerMin": 0.1,
+  "walkingSpeedMps": 0.8,
+  "dssWeights": {
+    "cag": 0.5,
+    "busInefficiency": 0.3,
+    "facilityDispersion": 0.2
+  },
+  "partialReplacement": "기존 의료 CAG는 고정하고 DSS의 명시적 시설분산 항만 복지 최근거리로 치환",
+  "fullReplacement": "CAG의 RI와 DSS 시설분산 항을 모두 동일 복지 목적지 대리층으로 치환",
+  "combinedRecordEqual": "598개 목록 레코드 각 1; 경로당 585건이 지배",
+  "combinedLayerEqual": "3개 목록의 RI 총기여 각 1/3; 목록 내 레코드 동일가중",
+  "randomSeed": "not_applicable_deterministic_distance_model",
+  "leakageControl": "기존 candidate_top8 플래그와 DRT 이용·사후성과는 점수 입력에 사용하지 않음; 현행 3동은 기준과 동일하게 후보 풀에서만 제외",
+  "eligibilityBoundary": "현행 3동 제외은 과거 팀의 사후 대리매핑을 재현한 것이며 효과 검증값이 아님",
+  "seniorCenterVersionBoundary": "2025-06-30 공개좌표 585건과 2026-06 최신 594행 중 좌표완성 570행을 별도 시나리오로 비교; 24행 좌표 미완성",
+  "evidenceBoundary": "공식 고양온돌 62개 서비스 제공위치·이용실적·운영제약이 아닌 공개 복지목적지 대리층 민감도"
+}

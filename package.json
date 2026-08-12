@@ -1,15 +1,17 @@
 {
   "name": "goyang-care-policy-dashboard",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
   "description": "고양시 공개데이터를 활용한 통합돌봄·교통 정책 사전검토 MVP",
   "scripts": {
-    "test": "node --test tests/api-connections.test.js tests/api-proxy.test.js tests/data-contract.test.js tests/guided-model.test.js tests/pro-analysis-contract.test.js tests/pro-analysis.test.js tests/policy-engine.test.js tests/public-release.test.js tests/presentation.test.js",
+    "test": "node --test tests/api-connections.test.js tests/api-proxy.test.js tests/data-contract.test.js tests/guided-model.test.js tests/pro-analysis-contract.test.js tests/pro-analysis.test.js tests/policy-engine.test.js tests/public-release.test.js tests/presentation.test.js tests/welfare-coordinate-layers.test.js tests/welfare-destination-sensitivity.test.js",
     "test:browser": "node tests/api-browser.js && node tests/guided-browser.js && node tests/browser-smoke.js && node tests/presentation-browser.js",
     "test:api-browser": "node tests/api-browser.js",
     "test:guided": "node tests/guided-browser.js",
     "test:presentation": "node tests/presentation-browser.js",
     "test:layout": "node tests/layout-audit.js",
+    "test:data-python": "python -m unittest tests.test_bus_network_evidence -v",
+    "capture:presentation-assets": "node scripts/capture-guided-assets.js",
     "export:presentation": "node scripts/export-presentation.js"
   },
   "engines": {

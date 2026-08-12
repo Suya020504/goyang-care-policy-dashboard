@@ -1,0 +1,9 @@
+﻿artifact,field,definition,unit
+headway_route_matches.csv,matchStatus,"단일 공식행, 복수 공식후보, 후보없음의 상호배타 상태",category
+headway_route_matches.csv,officialHeadwayTexts,공식 CSV 배차간격 셀 원문; 파싱·평균하지 않음,free text
+headway_route_matches.csv,candidateCount,보수적 정규화 키가 같은 공식 행 수,rows
+bms_route_linkage.csv,maximumStationIdOverlap,노선번호 후보별 BMS 정류장ID와 2025 고양 정류장ID 교집합의 최댓값,unique stops
+bms_route_linkage.csv,linkStatus,양의 교집합을 가진 유일 route_id만 연결한 결과 상태,category
+bms_linked_stop_points.csv,latitude,2025 고양시 정류장 원자료의 WGS84 위도,decimal degrees
+bms_linked_stop_points.csv,longitude,2025 고양시 정류장 원자료의 WGS84 경도,decimal degrees
+analysis_summary.json,routeNumberCandidateCoverage,86개 중 공식 배차 CSV에 정규화 번호 후보가 1개 이상 있는 노선 수,routes

@@ -1,0 +1,11 @@
+﻿field,definition,unit
+scenario_id,사전 정의한 치환 시나리오 키,id
+replacement_scope,기준/부분 치환/완전 치환 구분,category
+ri_mean,해당 동 100m 격자의 직선보행 거리마찰 합 평균,dimensionless proxy
+cag,z(수요지수)-z(RI); 완전 치환에서만 복지 RI로 재계산,z
+facility_dispersion_mean_m,동내 격자의 최근 목적지 직선거리 평균,m
+dss_raw,z(CAG)*0.5+z(버스비효율)*0.3+z(시설분산)*0.2,z weighted
+rank_global,44동 DSS 내림차순 순위,rank
+rank_eligible,현행 DRT 3동을 정책 후보 풀에서만 제외한 순위; 모델 입력은 아님,rank
+top8_eligible,rank_eligible<=8,boolean
+jaccard_vs_baseline_top8,기준 Top8과 시나리오 Top8 집합 유사도,0-1

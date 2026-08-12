@@ -8,6 +8,9 @@ const MODEL_PATH = path.join(__dirname, '..', 'src', 'guided-model.js');
 const DATA_PATH = path.join(__dirname, '..', 'public', 'data', 'data.js');
 const PRO_PATH = path.join(__dirname, '..', 'public', 'data', 'pro_analysis.js');
 const WELFARE_PATH = path.join(__dirname, '..', 'public', 'data', 'welfare_destinations.js');
+const WELFARE_COORDINATE_PATH = path.join(__dirname, '..', 'public', 'data', 'welfare_coordinate_layers.js');
+const WELFARE_DESTINATION_SENSITIVITY_PATH = path.join(__dirname, '..', 'public', 'data', 'welfare_destination_sensitivity.js');
+const BUS_NETWORK_EVIDENCE_PATH = path.join(__dirname, '..', 'public', 'data', 'bus_network_evidence.js');
 
 function loadBrowserGlobal(filePath, globalName) {
   const sandbox = { window: {} };
@@ -23,10 +26,16 @@ function loadData() {
   vm.runInContext(fs.readFileSync(DATA_PATH, 'utf8'), sandbox, { filename: DATA_PATH });
   vm.runInContext(fs.readFileSync(PRO_PATH, 'utf8'), sandbox, { filename: PRO_PATH });
   vm.runInContext(fs.readFileSync(WELFARE_PATH, 'utf8'), sandbox, { filename: WELFARE_PATH });
+  vm.runInContext(fs.readFileSync(WELFARE_COORDINATE_PATH, 'utf8'), sandbox, { filename: WELFARE_COORDINATE_PATH });
+  vm.runInContext(fs.readFileSync(WELFARE_DESTINATION_SENSITIVITY_PATH, 'utf8'), sandbox, { filename: WELFARE_DESTINATION_SENSITIVITY_PATH });
+  vm.runInContext(fs.readFileSync(BUS_NETWORK_EVIDENCE_PATH, 'utf8'), sandbox, { filename: BUS_NETWORK_EVIDENCE_PATH });
   return {
     data: JSON.parse(JSON.stringify(sandbox.window.DDOL_V2_DATA)),
     pro: JSON.parse(JSON.stringify(sandbox.window.DDOL_PRO_ANALYSIS)),
     welfare: JSON.parse(JSON.stringify(sandbox.window.DDOL_WELFARE_DESTINATIONS)),
+    welfareCoordinates: JSON.parse(JSON.stringify(sandbox.window.DDOL_WELFARE_COORDINATE_LAYERS)),
+    welfareDestinationSensitivity: JSON.parse(JSON.stringify(sandbox.window.DDOL_WELFARE_DESTINATION_SENSITIVITY)),
+    busNetworkEvidence: JSON.parse(JSON.stringify(sandbox.window.DDOL_BUS_NETWORK_EVIDENCE)),
   };
 }
 
@@ -38,7 +47,14 @@ const {
   buildAreaModel,
   buildChecklistExport,
 } = require('../src/guided-model.js');
-const { data, pro, welfare } = loadData();
+const {
+  data,
+  pro,
+  welfare,
+  welfareCoordinates,
+  welfareDestinationSensitivity,
+  busNetworkEvidence,
+} = loadData();
 
 test('classic script와 CommonJS에서 동일한 6단계 API를 제공한다', () => {
   const browserApi = loadBrowserGlobal(MODEL_PATH, 'DDOL_GUIDED_MODEL');
@@ -56,7 +72,15 @@ test('classic script와 CommonJS에서 동일한 6단계 API를 제공한다', (
 });
 
 test('기본 관산동은 상충 신호와 피드백 재분석을 함께 계산한다', () => {
-  const model = buildAreaModel(data, pro, DEFAULT_DONG_CODE, welfare);
+  const model = buildAreaModel(
+    data,
+    pro,
+    DEFAULT_DONG_CODE,
+    welfare,
+    welfareCoordinates,
+    busNetworkEvidence,
+    welfareDestinationSensitivity,
+  );
   assert.deepEqual(model.selectedArea, {
     code: '4128160000',
     district: '고양시 덕양구',
@@ -87,6 +111,16 @@ test('기본 관산동은 상충 신호와 피드백 재분석을 함께 계산�
   assert.equal(model.feedbackAudit.spatial.otherMethodsSignificantHh, false);
   assert.equal(model.villageBusSnapshot.servingStopCount, 127);
   assert.equal(model.villageBusSnapshot.allStopCount, 129);
+  assert.equal(model.welfareDestinationSensitivitySnapshot.scenarioCount, 11);
+  assert.equal(model.welfareDestinationSensitivitySnapshot.maximumReplacementCount, 4);
+  assert.equal(model.welfareDestinationSensitivitySnapshot.minimumJaccard, 0.333333);
+  assert.deepEqual(model.welfareDestinationSensitivitySnapshot.stableCoreDongs, ['가좌동', '효자동', '고양동', '관산동']);
+  assert.deepEqual(model.welfareDestinationSensitivitySnapshot.selectedArea, {
+    dong: '관산동',
+    top8ScenarioCount: 11,
+    scenarioCount: 11,
+    stableAllScenarios: true,
+  });
   assert.equal(model.villageBusSnapshot.uniqueRouteCount, 8);
   assert.equal(model.accessibilityScenario.status, 'hypothetical_scenario_not_observed_before_after');
   assert.equal(model.accessibilityScenario.referenceMedianMinutes, 16.2342144479973);
@@ -97,11 +131,34 @@ test('기본 관산동은 상충 신호와 피드백 재분석을 함께 계산�
   assert.equal(model.accessibilityScenario.scenarioCoverage30High, 1);
   assert.equal(model.accessibilityScenario.breakEvenWaitMedianMinutes, 7.182154521777173);
   assert.deepEqual(model.accessibilityScenario.waitScenarioMinutes, [5, 10, 15]);
-  assert.deepEqual(model.dataAcquisition.map((item) => item.status), ['확보', '목록 확보', 'API 필요', '기관 협조']);
+  assert.deepEqual(model.dataAcquisition.map((item) => item.status), ['확보', '목록 확보', '부분 확보', '기관 협조']);
   assert.equal(model.welfareDestinationSnapshot.selectedDongCount, 16);
   assert.equal(model.welfareDestinationSnapshot.currentWebDisplayedTotal, 593);
   assert.equal(model.welfareDestinationSnapshot.workbookRecordCount, 594);
   assert.equal(model.welfareDestinationSnapshot.coordinateCount, 0);
+  assert.equal(model.welfareCoordinateSnapshot.seniorCenter.citywideCoordinateCount, 585);
+  assert.equal(model.welfareCoordinateSnapshot.seniorCenter.facilityCountInsideDong, 16);
+  assert.equal(model.welfareCoordinateSnapshot.seniorCenter.nearestMedianM, 513.879);
+  assert.equal(model.welfareCoordinateSnapshot.seniorCenter.coverage15MinPct, 76.738);
+  assert.equal(
+    model.welfareCoordinateSnapshot.linkage.linked_total
+      + model.welfareCoordinateSnapshot.linkage.manual_review
+      + model.welfareCoordinateSnapshot.linkage.unmatched,
+    594,
+  );
+  assert.match(model.welfareCoordinateSnapshot.criticalDisclaimer, /62개 서비스 위치가 아니며/);
+  assert.equal(model.busNetworkEvidenceSnapshot.routeDenominator, 86);
+  assert.equal(model.busNetworkEvidenceSnapshot.routeNumberCandidates, 82);
+  assert.equal(model.busNetworkEvidenceSnapshot.uniqueOfficialRows, 72);
+  assert.equal(model.busNetworkEvidenceSnapshot.multipleOfficialRows, 10);
+  assert.equal(model.busNetworkEvidenceSnapshot.unresolvedNoCandidate, 4);
+  assert.equal(model.busNetworkEvidenceSnapshot.historicalBms.linkedRoutes, 7);
+  assert.match(model.busNetworkEvidenceSnapshot.interpretation, /실제 운행준수율/);
+  assert.equal(model.currentDrtContext.serviceZoneCount, 4);
+  assert.equal(model.currentDrtContext.vehicleSnapshot, 14);
+  assert.deepEqual(model.currentDrtContext.mixedOperationZones, ['식사', '덕은', '향동']);
+  assert.equal(model.currentDrtContext.fullDayFlexibleZone, '고봉');
+  assert.match(model.currentDrtContext.limitation, /운영권역은 행정동과 같은 단위가 아니며/);
   assert.equal(model.candidateSet.display, '8/8');
   assert.equal(model.candidateSet.isReproduced, true);
   assert.equal(model.robustness.bounded.display, '45/45');
@@ -155,11 +212,20 @@ test('현장확인 체크리스트는 6개이며 알려진 항목만 저장한�
     '앱·전화·승하차·동행지원 접근성',
     '대안별 운영자원·비용과 방문서비스 대체성',
   ]);
-  const model = buildAreaModel(data, pro, DEFAULT_DONG_CODE, welfare);
+  const model = buildAreaModel(
+    data,
+    pro,
+    DEFAULT_DONG_CODE,
+    welfare,
+    welfareCoordinates,
+    busNetworkEvidence,
+    welfareDestinationSensitivity,
+  );
   const result = buildChecklistExport({
     model,
     selectedChecks: [CHECKLIST_ITEMS[0].id, { id: CHECKLIST_ITEMS[3].id }, 'unknown-check'],
     policyAnswers: { visitSubstitution: 'yes', accessibleVehicle: 'no', irregularDemand: 'invented' },
+    reviewedQuestionIds: POLICY_QUESTIONS.map((item) => item.id),
     savedAt: '2026-08-10T03:00:00.000Z',
   });
   assert.equal(result.fieldChecks.length, 6);
@@ -170,11 +236,20 @@ test('현장확인 체크리스트는 6개이며 알려진 항목만 저장한�
   assert.equal('note' in result, false);
   assert.equal(POLICY_QUESTIONS.length, 5);
   assert.deepEqual(result.alternativeQuestions.map((item) => item.answer), ['yes', 'unknown', 'unknown', 'unknown', 'no']);
+  assert.ok(result.alternativeQuestions.every((item) => item.reviewed));
   assert.ok(result.alternativeQuestions.every((item) => !('score' in item) && !('recommendation' in item)));
 });
 
 test('저장 결과는 현장조사 범위와 사람 검토를 명시하고 개인정보·OD·정책추천 필드를 만들지 않는다', () => {
-  const model = buildAreaModel(data, pro, DEFAULT_DONG_CODE, welfare);
+  const model = buildAreaModel(
+    data,
+    pro,
+    DEFAULT_DONG_CODE,
+    welfare,
+    welfareCoordinates,
+    busNetworkEvidence,
+    welfareDestinationSensitivity,
+  );
   const result = buildChecklistExport({
     model,
     selectedChecks: CHECKLIST_ITEMS.map((item) => item.id),
@@ -195,7 +270,14 @@ test('저장 결과는 현장조사 범위와 사람 검토를 명시하고 개�
   assert.equal(result.evidenceSnapshot.accessibilityScenario.scenarioCoverage30Low, 0.9956923076923077);
   assert.equal(result.evidenceSnapshot.accessibilityScenario.scenarioCoverage30High, 1);
   assert.match(result.evidenceSnapshot.accessibilityScenario.limitation, /실제 DRT 효과.*아닙니다/);
+  assert.equal(result.evidenceSnapshot.welfareDestinationSensitivity.scenarioCount, 11);
+  assert.equal(result.evidenceSnapshot.welfareDestinationSensitivity.maximumReplacementCount, 4);
+  assert.equal(result.evidenceSnapshot.welfareDestinationSensitivity.minimumJaccard, 0.333333);
+  assert.deepEqual(result.evidenceSnapshot.welfareDestinationSensitivity.stableCoreDongs, ['가좌동', '효자동', '고양동', '관산동']);
+  assert.equal(result.evidenceSnapshot.welfareDestinationSensitivity.selectedArea.top8ScenarioCount, 11);
+  assert.match(result.evidenceSnapshot.welfareDestinationSensitivity.limitation, /62개 서비스/);
   assert.equal(result.savedAt, '2026-08-10T12:34:56.000Z');
+  assert.ok(result.alternativeQuestions.every((item) => item.answer === 'unanswered' && item.reviewed === false));
   assert.equal(result.decisionScope, '현장조사 우선검토');
   assert.equal(result.decisionNotice, '정책 도입 확정 아님');
   assert.equal(result.humanReview.status, 'investigate');

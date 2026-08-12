@@ -1,0 +1,5 @@
+﻿routeName,normalizedRouteNumber,reviewStatus,candidateCount,candidateEvidence,requiredAction,excludedFromSingleHeadway
+15-1(구파발),15-1,unresolved_no_candidate,0,,현행 노선목록 API 또는 고양시 노선대장으로 존재·변경 이력 확인,yes
+15-1(지축),15-1,unresolved_no_candidate,0,,현행 노선목록 API 또는 고양시 노선대장으로 존재·변경 이력 확인,yes
+15A,15A,unresolved_no_candidate,0,,현행 노선목록 API 또는 고양시 노선대장으로 존재·변경 이력 확인,yes
+15B,15B,unresolved_no_candidate,0,,현행 노선목록 API 또는 고양시 노선대장으로 존재·변경 이력 확인,yes

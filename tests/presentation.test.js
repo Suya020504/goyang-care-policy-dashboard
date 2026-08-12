@@ -34,6 +34,15 @@ function loadPresenterData() {
   return JSON.parse(JSON.stringify(sandbox.window.GOYANG_PRESENTER_SCRIPT));
 }
 
+function normalizeVisibleText(html) {
+  return html
+    .replace(/<br\s*\/?\s*>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 test('관객 덱은 29장(본편 17 + 부록 12)이고 발표자 대본 번들과 분리된다', () => {
   const html = read('presentation/index.html');
   const css = read('presentation/presentation.css');
@@ -51,6 +60,7 @@ test('관객 덱은 29장(본편 17 + 부록 12)이고 발표자 대본 번들�
   assert.match(html, /\.\.\/public\/data\/data\.js/);
   assert.match(html, /\.\.\/public\/data\/pro_analysis\.js/);
   assert.match(html, /\.\.\/public\/data\/welfare_destinations\.js/);
+  assert.match(html, /\.\.\/public\/data\/welfare_destination_sensitivity\.js/);
   assert.match(html, /\.\.\/public\/data\/boundaries\.js/);
   assert.match(css, /@page\s*\{\s*size:\s*1600px 900px;\s*margin:\s*0;\s*\}/);
   assertLocalReferencesExist('presentation/index.html');
@@ -62,7 +72,7 @@ test('관객 덱은 심사 피드백 보완 결과와 사실 경계를 함께 �
   const requiredClaims = [
     /약 2\.9만/, /현재 이용자 수(?:가)? 아님/, /62개 물리적 목적지(?:가)? 아님/, /전체 돌봄 대상자(?:가)? 아님/,
     /1,972/, /44개 동/, /8\s*\/\s*8|여덟 곳이 그대로 다시 나왔습니다/,
-    /관산동/, /\.931/, /후보 8곳 중 3곳|3\s*\/\s*8/, /127\s*\/\s*129/, /594/, /좌표/, /99\.6/, /4권역/,
+    /관산동/, /\.931/, /후보 8곳 중 3곳|3\s*\/\s*8/, /127\s*\/\s*129/, /594/, /570/, /좌표/, /11개 시나리오|복지 목적지 치환/, /최대 4곳|4\s*\/\s*8/, /99\.6/, /4권역/,
     /실제 대상자/, /서비스 위치/, /배차/, /OD/, /6단계/, /효과.*아닙니다|효과예측이 아니라/,
     /45개/, /231개/, /선정확률|확률.*아니/,
   ];
@@ -102,6 +112,23 @@ test('발표자 대본은 설명 11분대, 전환, MVP 2분을 중복 없이 분
     assert.ok(slide.title && slide.claim && slide.script && slide.caution && slide.transition);
     assert.ok(Array.isArray(slide.evidence) && slide.evidence.length > 0);
     assert.ok(slide.durationSeconds > 0);
+  });
+});
+
+test('29장 관객 제목과 발표자 제목은 같은 문장이다', () => {
+  const html = read('presentation/index.html');
+  const data = loadPresenterData();
+  const sections = [...html.matchAll(/<section\b[^>]*data-slide="(\d+)"[^>]*>([\s\S]*?)<\/section>/g)];
+  assert.equal(sections.length, 29);
+  sections.forEach((section) => {
+    const id = Number(section[1]);
+    const heading = section[2].match(/<h[12]\b[^>]*>([\s\S]*?)<\/h[12]>/i);
+    assert.ok(heading, `슬라이드 ${id}의 주 제목이 없습니다.`);
+    assert.equal(
+      normalizeVisibleText(heading[1]),
+      data.slides.find((slide) => slide.id === id).title,
+      `슬라이드 ${id} 관객·발표자 제목 불일치`,
+    );
   });
 });
 

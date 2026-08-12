@@ -1,0 +1,37 @@
+{
+  "artifactSchemaVersion": "1.0.0",
+  "analysisId": "official_bus_headway_bms_crosscheck_v1",
+  "headway": {
+    "routeDenominator": 86,
+    "exactRawRouteNumberCoverage": 30,
+    "routeNumberCandidateCoverage": 82,
+    "matchedUnique": 72,
+    "matchedMultipleCandidates": 10,
+    "unresolvedNoCandidate": 4,
+    "officialRowCount": 132,
+    "officialUniqueRouteNumberCount": 123,
+    "encoding": "cp949"
+  },
+  "bms": {
+    "bmsRouteMapRows": 4492,
+    "bmsStopOrderRows": 482779,
+    "linkedUniqueRouteId": 7,
+    "ambiguousRouteId": 0,
+    "unresolvedNoStationOverlap": 79,
+    "linkedCoordinatePoints": 56,
+    "linkedUniqueCoordinateLocations": 47,
+    "routeMapEncoding": "cp949"
+  },
+  "sourceHashes": {
+    "goyang_headway_file_20241231": "251FF9E351CD71756B7DABF9C0C7DDF89B610454E155751FF78A919634300F65",
+    "gyeonggi_bms_route_map_20230925": "42B01C2DDE0DB7FA950CC49B5A799FD64C1E7A8200ED37CDDC6A6FA1CB17DFC1",
+    "gyeonggi_bms_stop_order_20230926": "D6912F4530FA169813F5198634735CBAE0B498C3600B8516BC0EA26BFF8F0C9E"
+  },
+  "interpretationBoundary": {
+    "actualTargetPopulation": "not_acquired",
+    "careService62": "not_acquired",
+    "drtOperations": "not_acquired",
+    "headway": "official_free_text_planned_interval_not_observed_service",
+    "bms": "historical_route_stop_order_not_current_geometry"
+  }
+}

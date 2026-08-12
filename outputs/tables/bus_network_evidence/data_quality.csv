@@ -1,0 +1,9 @@
+﻿check,value,status,note
+village_route_denominator,86,pass,public route-presence table distinct routeName
+headway_exact_raw_number_coverage,30,reference,before declared route-number normalization
+headway_candidate_coverage,82,qualified,82 includes 10 multiple-candidate route numbers
+headway_unique_match,72,pass,single official row only
+headway_multiple_candidate,10,manual_review,excluded from single-value claims
+headway_no_candidate,4,manual_review,no fuzzy fallback
+bms_stop_order_actual_rows,482779,pass,counted from acquired ZIP
+bms_conservative_route_links,7,qualified,2023/2025 snapshot mismatch; not current route geometry

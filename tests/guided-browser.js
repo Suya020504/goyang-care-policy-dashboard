@@ -57,6 +57,8 @@ async function main() {
   assert.equal(await page.locator('.guided-step').count(), 6);
   assert.equal(await page.locator('.stage-nav').count(), 0);
   assert.match(await page.locator('h1').innerText(), /돌봄이 필요한 곳, 이동부터 확인/);
+  assert.match(await page.locator('.guided-funnel').innerText(), /44개 동[\s\S]*41개 동 중 8곳[\s\S]*관산동/);
+  assert.match(await page.locator('.guided-boundary-note').innerText(), /사후 대리매핑 3개 동/);
   assert.match(await page.locator('#app-main').innerText(), /문제[\s\S]*분석[\s\S]*행동/);
   assert.match(await page.locator('#app-main').innerText(), /의료 접근성 대리진단/);
   assert.match(await page.locator('#app-main').innerText(), /실제 고양온돌 대상자 위치와 62개 서비스 제공 위치는 사용하지 않았습니다/);
@@ -108,14 +110,37 @@ async function main() {
 
   await goNext(page);
   assert.equal(await page.locator('.guided-check-row input[type="checkbox"]').count(), 6);
+  assert.equal(await page.locator('.guided-evidence-disclosure').getAttribute('open'), null);
+  await page.locator('.guided-evidence-disclosure summary').click();
   assert.match(await page.locator('.guided-village-screen').innerText(), /127\/129/);
   assert.match(await page.locator('.guided-village-screen').innerText(), /8개/);
   assert.match(await page.locator('.guided-village-screen').innerText(), /배차.*증명하지 않습니다/);
+  assert.match(await page.locator('.guided-bus-evidence').innerText(), /마을노선 분모[\s\S]*86개/);
+  assert.match(await page.locator('.guided-bus-evidence').innerText(), /번호 후보 확인[\s\S]*82개/);
+  assert.match(await page.locator('.guided-bus-evidence').innerText(), /단일 공식행[\s\S]*72개/);
+  assert.match(await page.locator('.guided-bus-evidence').innerText(), /추가 확인[\s\S]*14개/);
+  assert.match(await page.locator('.guided-bus-evidence').innerText(), /실제 운행준수율/);
   assert.match(await page.locator('.guided-welfare-screen').innerText(), /관산동 경로당[\s\S]*16곳/);
   assert.match(await page.locator('.guided-welfare-screen').innerText(), /593건\s*\/\s*594행/);
-  assert.match(await page.locator('.guided-welfare-screen').innerText(), /좌표 확보[\s\S]*0건/);
+  assert.match(await page.locator('.guided-welfare-screen').innerText(), /2026-06 파일 내 좌표 열[\s\S]*없음/);
+  assert.match(await page.locator('.guided-welfare-coordinate').innerText(), /경로당 공개좌표[\s\S]*585건/);
+  assert.match(await page.locator('.guided-welfare-coordinate').innerText(), /최근접거리 중앙값[\s\S]*514m/);
+  assert.match(await page.locator('.guided-welfare-coordinate').innerText(), /15분 면적격자[\s\S]*76\.7%/);
+  assert.match(await page.locator('.guided-welfare-coordinate').innerText(), /고양온돌 62개 서비스 위치가 아니며/);
+  const destinationSensitivity = await page.locator('.guided-destination-sensitivity').innerText();
+  assert.match(destinationSensitivity, /목적지를 바꾸면 후보도 바뀝니다/);
+  assert.match(destinationSensitivity, /복지 목적지 시나리오[\s\S]*11개/);
+  assert.match(destinationSensitivity, /기준 후보 최대 교체[\s\S]*4\/8/);
+  assert.match(destinationSensitivity, /최저 집합 유사도[\s\S]*J 0\.333/);
+  assert.match(destinationSensitivity, /관산동 후보 유지[\s\S]*11\/11/);
+  assert.match(destinationSensitivity, /가좌동·효자동·고양동·관산동/);
+  assert.match(destinationSensitivity, /62개 서비스[\s\S]*정책효과가 아닙니다/);
+  assert.match(await page.locator('.guided-drt-context').innerText(), /식사·덕은·향동[\s\S]*출퇴근 고정노선/);
+  assert.match(await page.locator('.guided-drt-context').innerText(), /고봉[\s\S]*06~24시 전일 호출형/);
+  assert.match(await page.locator('.guided-drt-context').innerText(), /운영권역은 행정동과 같은 단위가 아니며/);
   assert.equal(await page.locator('.guided-data-acquisition li').count(), 4);
-  assert.match(await page.locator('.guided-data-acquisition').innerText(), /확보[\s\S]*목록 확보[\s\S]*API 필요[\s\S]*기관 협조/);
+  assert.match(await page.locator('.guided-data-acquisition').innerText(), /확보[\s\S]*목록 확보[\s\S]*부분 확보[\s\S]*기관 협조/);
+  await page.locator('.guided-evidence-disclosure summary').click();
   await page.screenshot({ path: path.join(root, 'screenshots', '17_관산동_안내흐름_4단계.png'), fullPage: true });
   assert.equal(await page.locator('.guided-check-row input[type="checkbox"]:checked').count(), 0);
   // 구석 토스트를 폐기하고, 사용자의 시선이 있는 자리에 상시 오류 슬롯을 둔다.
@@ -132,6 +157,7 @@ async function main() {
   await page.locator('.guided-check-row input[type="checkbox"]').nth(0).check();
   await page.locator('.guided-check-row input[type="checkbox"]').nth(3).check();
   assert.equal(await page.locator('.guided-check-row input[type="checkbox"]:checked').count(), 2);
+  assert.equal(await page.locator('.guided-evidence-disclosure').getAttribute('open'), null);
 
   await goNext(page);
   assert.match(page.url(), /step=5/);
@@ -151,6 +177,11 @@ async function main() {
   assert.match(await page.locator('h1').innerText(), /관산동 현장조사 체크리스트/);
   assert.equal(await page.locator('.guided-final-checks input[type="checkbox"]').count(), 6);
   assert.equal(await page.locator('.guided-final-checks input[type="checkbox"]:checked').count(), 2);
+  assert.equal(await page.locator('.guided-answer-summary li').count(), 5);
+  assert.match(await page.locator('.guided-answer-summary').innerText(), /방문서비스 강화[\s\S]*예/);
+  assert.match(await page.locator('.guided-answer-summary').innerText(), /DRT 파일럿 조사[\s\S]*아니오/);
+  assert.equal(await page.locator('[data-action="guided-print"]').count(), 1);
+  assert.match(await page.locator('[data-action="guided-save"]').innerText(), /데이터용 JSON/);
   assert.match(await page.locator('.guided-review-note').innerText(), /개인정보를 입력받지 않습니다/);
   const downloadPromise = page.waitForEvent('download');
   await page.locator('[data-action="guided-save"]').click();
@@ -171,10 +202,19 @@ async function main() {
   assert.equal(payload.evidenceSnapshot.welfareDestination.currentWebDisplayedTotal, 593);
   assert.equal(payload.evidenceSnapshot.welfareDestination.workbookRecordCount, 594);
   assert.equal(payload.evidenceSnapshot.welfareDestination.coordinateCount, 0);
+  assert.equal(payload.evidenceSnapshot.welfareDestinationSensitivity.scenarioCount, 11);
+  assert.equal(payload.evidenceSnapshot.welfareDestinationSensitivity.maximumReplacementCount, 4);
+  assert.equal(payload.evidenceSnapshot.welfareDestinationSensitivity.minimumJaccard, 0.333333);
+  assert.deepEqual(payload.evidenceSnapshot.welfareDestinationSensitivity.stableCoreDongs, ['가좌동', '효자동', '고양동', '관산동']);
+  assert.equal(payload.evidenceSnapshot.welfareDestinationSensitivity.selectedArea.top8ScenarioCount, 11);
+  assert.match(payload.evidenceSnapshot.welfareDestinationSensitivity.limitation, /62개 서비스/);
   assert.equal(payload.fieldChecks.length, 6);
   assert.equal(payload.fieldChecks.filter((item) => item.checked).length, 2);
   assert.equal(payload.alternativeQuestions.length, 5);
   assert.equal(payload.alternativeQuestions[0].answer, 'yes');
+  assert.equal(payload.alternativeQuestions[0].reviewed, true);
+  assert.equal(payload.alternativeQuestions[1].answer, 'unknown');
+  assert.equal(payload.alternativeQuestions[1].reviewed, true);
   assert.equal(payload.alternativeQuestions[4].answer, 'no');
   assert.equal(payload.humanReview.status, 'investigate');
   assert.match(payload.humanReview.notice, /개인정보.*입력 없이/);

@@ -1,0 +1,4 @@
+﻿sourceId,evidenceType,officialPage,snapshotDate,retrievedDate,sha256,privateRawLocation,publicRawIncluded
+goyang_headway_file_20241231,actual_file_values,https://www.data.go.kr/data/3079226/fileData.do,2024-12-31,2026-08-13,251FF9E351CD71756B7DABF9C0C7DDF89B610454E155751FF78A919634300F65,feedback_expansion/headway_csv,no
+gyeonggi_bms_route_map_20230925,actual_file_values,https://data.gg.go.kr/portal/data/service/selectServicePage.do?infId=1MQHOF2F4XO6DQMRHXOA34337309&infSeq=1,2023-09-25,2026-08-13,42B01C2DDE0DB7FA950CC49B5A799FD64C1E7A8200ED37CDDC6A6FA1CB17DFC1,feedback_expansion/bms_route_map_csv,no
+gyeonggi_bms_stop_order_20230926,actual_file_values,https://data.gg.go.kr/portal/data/service/selectServicePage.do?infId=TEXYY9BODHAA8QZ1ZZG233176356&infSeq=1,2023-09-26,2026-08-13,D6912F4530FA169813F5198634735CBAE0B498C3600B8516BC0EA26BFF8F0C9E,feedback_expansion/bms_stop_order_zip,no
