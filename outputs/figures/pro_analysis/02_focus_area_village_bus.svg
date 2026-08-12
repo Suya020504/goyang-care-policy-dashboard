@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="525" viewBox="0 0 1200 525" role="img" aria-labelledby="title desc">
+<title id="title">관산동 행주동 대화동 마을버스 정적 존재 비교</title>
+<desc id="desc">세 동의 기술 비교표이며 표본선정·인과검증이 아니다. 대화동은 비후보 설명용 비교 동이지 통계적 대조군이 아니며, 마을노선 수·정류장 비율은 배차나 실제 돌봄 접근성을 뜻하지 않는다.</desc>
+<style>
+text{font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#15213A} .title{font-size:27px;font-weight:700} .subtitle{font-size:15px;fill:#526079} .label{font-size:19px;font-weight:700} .badge{font-size:13px;fill:#526079} .value{font-size:15px;font-weight:700} .note{font-size:13px;fill:#526079} .footer{font-size:13px;fill:#7B3F32}
+</style>
+<rect width="1200" height="525" fill="#FFFFFF"/>
+<text x="42" y="47" class="title">관산·행주·대화: 마을노선 표기 정류장 비율</text>
+<text x="42" y="76" class="subtitle">기준일 2025-08-25 · 경계 내 정류장 · 정적 노선 존재 1차 스크리닝</text>
+<text x="300" y="112" class="note">0%</text><text x="930" y="112" class="note">100%</text>
+<text x="42" y="158" class="label">관산동</text><text x="137" y="158" class="badge">기준후보</text><rect x="300" y="135" width="650" height="30" rx="8" fill="#E8EEF7"/><rect x="300" y="135" width="639.922" height="30" rx="8" fill="#3558D4"/><text x="968" y="158" class="value">98.45% · 127/129개소</text><text x="300" y="188" class="note">고유 마을노선 8개: 012, 025, 026, 036, 037, 055, 088, N005</text><text x="42" y="263" class="label">행주동</text><text x="137" y="263" class="badge">기준후보</text><rect x="300" y="240" width="650" height="30" rx="8" fill="#E8EEF7"/><rect x="300" y="240" width="552.500" height="30" rx="8" fill="#3558D4"/><text x="968" y="263" class="value">85.00% · 34/40개소</text><text x="300" y="293" class="note">고유 마을노선 6개: 011, 029B, 060, 065, 069, 072B</text><text x="42" y="368" class="label">대화동</text><text x="137" y="368" class="badge">비후보 비교</text><rect x="300" y="345" width="650" height="30" rx="8" fill="#E8EEF7"/><rect x="300" y="345" width="506.618" height="30" rx="8" fill="#77849A"/><text x="968" y="368" class="value">77.94% · 53/68개소</text><text x="300" y="398" class="note">고유 마을노선 12개: 056, 057, 059, 062A, 062B, 066A, 074, 090, 091A, 091B, N002, N007</text>
+<line x1="42" y1="468" x2="1158" y2="468" stroke="#D7DEEA"/>
+<text x="42" y="500" class="footer">배차·운행횟수·시간대·방향·환승·OD를 반영하지 않으므로 공급량 또는 정책 우선순위가 아니다.</text>
+</svg>

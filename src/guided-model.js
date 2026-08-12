@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function createGuidedModel() {
   'use strict';
 
-  const DEFAULT_DONG_CODE = '4128163000';
+  const DEFAULT_DONG_CODE = '4128160000';
 
   const STEPS = Object.freeze([
     Object.freeze({
@@ -15,16 +15,16 @@
       summary: '정책 도입지가 아니라 현장조사를 먼저 검토할 후보를 살펴봅니다.',
     }),
     Object.freeze({
-      id: 'haengju-signals',
+      id: 'area-signals',
       number: 2,
-      title: '행주동 신호',
-      summary: '행주동의 고령수요, 버스 공급, 의료시설 거리 신호를 도시 기준과 비교합니다.',
+      title: '지역 신호',
+      summary: '선택 지역의 고령수요, 버스 공급, 의료시설 거리 신호를 도시 기준과 비교합니다.',
     }),
     Object.freeze({
       id: 'evidence-confidence',
       number: 3,
       title: '근거 확실성',
-      summary: '후보집합 재현, DSS 불일치, 가중치 민감도를 한 단계씩 구분해 읽습니다.',
+      summary: '후보집합 재현, 구성요소 중복, 항 제거 민감도를 한 단계씩 구분해 읽습니다.',
     }),
     Object.freeze({
       id: 'evidence-gaps',
@@ -48,34 +48,34 @@
 
   const CHECKLIST_ITEMS = Object.freeze([
     Object.freeze({
-      id: 'anonymous-demand',
-      label: '주요 이용 서비스와 목적지 유형',
-      description: '개인을 식별하지 않는 집계 단위로 서비스와 목적지 유형을 확인합니다.',
+      id: 'aggregate-target-demand',
+      label: '실제 대상자 규모와 서비스별 이동수요',
+      description: '개인을 식별하지 않는 집계 단위로 대상자 수, 이용 서비스, 미충족 수요를 확인합니다.',
     }),
     Object.freeze({
-      id: 'travel-pattern',
-      label: '이용 빈도·시간대·방향의 집중 여부',
-      description: '실제 이용패턴은 현재 공개 대리분석에 포함되지 않았습니다.',
+      id: 'service-location-capacity',
+      label: '62개 서비스의 실제 제공 위치와 수용력',
+      description: '서비스 목록 수가 아니라 실제 제공기관 위치, 운영시간, 정원과 이용조건을 확인합니다.',
     }),
     Object.freeze({
-      id: 'call-access',
-      label: '앱·전화 호출 가능성과 미이용 사유',
-      description: '호출수단 접근성과 서비스를 이용하지 못하는 이유를 함께 확인합니다.',
+      id: 'village-bus-operation',
+      label: '마을버스 배차·운행시간·방향·목적지',
+      description: '정적 노선 존재를 넘어 실제 운행횟수, 첫·막차, 방향과 돌봄 목적지 연결을 확인합니다.',
     }),
     Object.freeze({
-      id: 'boarding-support',
-      label: '휠체어·승하차·동행지원 필요',
-      description: '차량 접근성뿐 아니라 승하차와 동행에 필요한 지원을 확인합니다.',
+      id: 'operational-boundary-od',
+      label: '운영경계·OD·보행·환승 조건',
+      description: '행정동 경계가 아닌 실제 출발지·목적지 집계, 정류장 보행권과 환승 부담을 확인합니다.',
     }),
     Object.freeze({
-      id: 'visit-capacity',
-      label: '방문서비스 대체 가능성과 제공기관 수용력',
-      description: '이동 지원 대신 방문 제공이 가능한 서비스와 기관 수용력을 확인합니다.',
+      id: 'access-support',
+      label: '앱·전화·승하차·동행지원 접근성',
+      description: '호출수단, 휠체어 승하차, 보호자·돌봄인력 동행과 미이용 사유를 확인합니다.',
     }),
     Object.freeze({
-      id: 'operations-data',
-      label: '차량·운영인력·호출·대기·OD·비용 자료 확보 가능성',
-      description: '현재 공개 대리분석에 없는 운영자료를 어느 부서에서 확보할지 확인합니다.',
+      id: 'alternative-capacity-cost',
+      label: '대안별 운영자원·비용과 방문서비스 대체성',
+      description: '차량·인력·대기·비용과 방문서비스 제공기관의 수용력을 함께 확인합니다.',
     }),
   ]);
 
@@ -141,7 +141,7 @@
   function findCandidate(data, requestedCode) {
     const candidates = candidateRows(data);
     const fallback = candidates.find((area) => String(area.code) === DEFAULT_DONG_CODE);
-    if (!fallback) throw new TypeError('후보 데이터에서 기본 행주동을 찾을 수 없습니다.');
+    if (!fallback) throw new TypeError('후보 데이터에서 기본 관산동을 찾을 수 없습니다.');
     const selected = candidates.find((area) => String(area.code) === String(requestedCode));
     return { candidates, selected: selected || fallback, usedFallback: !selected };
   }
@@ -183,6 +183,81 @@
     });
   }
 
+  function findScenario(rows, scenarioId) {
+    return (Array.isArray(rows) ? rows : []).find((row) => row?.scenarioId === scenarioId) || null;
+  }
+
+  function dssFeedbackAudit(pro, area) {
+    const dependence = pro.dssComponentDependence || {};
+    const ablation = pro.dssAblation || {};
+    const dependencePair = (dependence.highMonotonicDependencePairs || dependence.pairRows || [])
+      .find((row) => new Set([row?.componentA, row?.componentB]).has('bus')
+        && new Set([row?.componentA, row?.componentB]).has('facility')) || null;
+    const singleRemovalScenarios = ['remove_bus', 'remove_explicit_facility']
+      .map((scenarioId) => findScenario(ablation.scenarios, scenarioId))
+      .filter(Boolean);
+    const combinedRemoval = findScenario(ablation.scenarios, 'remove_bus_and_explicit_facility');
+    const baselineCount = finite(findScenario(ablation.scenarios, 'baseline')?.top8Dongs?.length, 8);
+    const replacedCount = (scenario) => Math.max(0, baselineCount - finite(scenario?.intersectionCount));
+    const maxSingleReplacement = singleRemovalScenarios.reduce(
+      (maximum, scenario) => Math.max(maximum, replacedCount(scenario)),
+      0,
+    );
+    const vif = Object.fromEntries((dependence.vifRows || []).map((row) => [row.component, finite(row.vif)]));
+    const spatialMethods = Array.isArray(pro.spatialWeights) ? pro.spatialWeights : [];
+    const queen = spatialMethods.find((item) => item?.method === 'queen') || null;
+    const queenRow = findByDong(queen?.localRows, area.dong);
+    const otherMethodHh = spatialMethods
+      .filter((item) => item?.method !== 'queen')
+      .some((item) => (item?.significantHhDongs || []).includes(area.dong));
+
+    return Object.freeze({
+      componentDependence: Object.freeze({
+        pearsonR: dependencePair ? finite(dependencePair.pearsonR) : null,
+        spearmanRho: dependencePair ? finite(dependencePair.spearmanRho) : null,
+        warningThreshold: finite(dependence.highMonotonicDependenceThreshold, 0.8),
+        vif: Object.freeze({
+          cag: vif.cag ?? null,
+          bus: vif.bus ?? null,
+          facility: vif.facility ?? null,
+        }),
+        interpretation: '버스 비효율과 의료거리 항이 비슷한 동 순서를 만들어 중복 반영될 위험이 있습니다.',
+      }),
+      ablation: Object.freeze({
+        baselineCount,
+        singleRemovalReplacementCount: maxSingleReplacement,
+        singleRemovalScenarioCount: singleRemovalScenarios.length,
+        combinedRemovalReplacementCount: combinedRemoval ? replacedCount(combinedRemoval) : null,
+        stableCoreDongs: Object.freeze([...(ablation.stableCoreDongs || [])]),
+        interpretation: '버스 또는 명시적 의료거리 항을 하나 빼면 기준 후보 8곳 중 각각 3곳이 바뀝니다.',
+      }),
+      spatial: Object.freeze({
+        queenQuadrant: queenRow?.quadrant ?? null,
+        queenQFdr: queenRow?.qFdr ?? null,
+        queenSignificantHh: Boolean(queenRow?.significantFdr05 && queenRow?.quadrant === 'HH'),
+        otherMethodsSignificantHh: otherMethodHh,
+        interpretation: queenRow?.significantFdr05 && queenRow?.quadrant === 'HH' && !otherMethodHh
+          ? `${area.dong} HH 군집은 Queen 인접에서만 확인돼 이웃 정의에 민감합니다.`
+          : `${area.dong}의 군집 판정은 공간 이웃 정의별 결과를 함께 확인해야 합니다.`,
+      }),
+    });
+  }
+
+  function villageBusSnapshot(pro, area) {
+    const screening = pro.villageBusScreening || {};
+    const row = findByCodeOrDong(screening.areaRows, area);
+    if (!row) return null;
+    return Object.freeze({
+      sourceDate: screening.sourceDate || null,
+      servingStopCount: finite(row.villageServingStopCount),
+      allStopCount: finite(row.allStopCount),
+      servingStopShare: finite(row.villageServingStopShare),
+      uniqueRouteCount: finite(row.uniqueVillageRouteCount),
+      routeNames: Object.freeze([...(row.villageRouteNames || [])]),
+      interpretation: '정류장 파일의 마을노선 존재 표기이며 배차·운행횟수·방향·목적지·실제 중복을 증명하지 않습니다.',
+    });
+  }
+
   function buildAreaModel(data, pro, code = DEFAULT_DONG_CODE) {
     if (!data || !pro) throw new TypeError('안내형 모델에는 DATA와 PRO가 모두 필요합니다.');
 
@@ -195,6 +270,8 @@
     const rankComparison = findByDong(data.rankComparisons, selected.dong);
     const boundedRow = findByCodeOrDong(weights.inclusionRows, selected);
     const boundaryRow = findByCodeOrDong(boundaryAudit.inclusionRows, selected);
+    const feedbackAudit = dssFeedbackAudit(pro, selected);
+    const villageSnapshot = villageBusSnapshot(pro, selected);
 
     const baselineDongs = Array.isArray(baseline.candidateDongs) ? baseline.candidateDongs : [];
     const candidateDongs = candidates.map((area) => area.dong);
@@ -245,6 +322,21 @@
       ),
     ]);
 
+    const demandIsHigher = finite(selected.agingRate) > finite(city.agingRate);
+    const routesAreHigher = finite(selected.routesPerStop) > finite(city.routesPerStop);
+    const facilityIsCloser = finite(selected.nearestFacilityM) < finite(city.nearestFacilityMeanM);
+    const evidenceFraming = Object.freeze({
+      headline: demandIsHigher && routesAreHigher && facilityIsCloser
+        ? '고령 수요는 높지만, 공개 공급 신호도 양호합니다.'
+        : `${selected.dong}의 수요와 공개 공급 신호를 함께 비교합니다.`,
+      subheadline: demandIsHigher && routesAreHigher && facilityIsCloser
+        ? `고령화율 ${formatPercent(selected.agingRate)}와 달리 정류장당 노선은 ${formatFixed(selected.routesPerStop, 2)}개, 의료시설 평균거리는 ${formatFixed(selected.nearestFacilityM / 1000, 2, 'km')}입니다. 이 상충을 실제 서비스 도달자료로 확인해야 합니다.`
+        : '공개 공급량이 실제 배차·환승·목적지 도달과 같은지는 현장에서 확인해야 합니다.',
+      summary: demandIsHigher && routesAreHigher && facilityIsCloser
+        ? '고령 수요 높음 · 공개 공급 신호 양호 · 실서비스 검증 필요'
+        : '공개데이터 대리신호 · 실서비스 검증 필요',
+    });
+
     return Object.freeze({
       steps: STEPS,
       decision: Object.freeze({
@@ -280,6 +372,7 @@
       }),
       usedFallback,
       signals,
+      evidenceFraming,
       candidateSet: Object.freeze({
         matchedCount: matchedCandidateCount,
         expectedCount: expectedCandidateCount,
@@ -311,6 +404,35 @@
         inclusionIsProbability: false,
         interpretation: '포함 횟수는 선정확률이 아니라 가중치 민감도 진단입니다.',
       }),
+      feedbackAudit,
+      feedbackRobustness: Object.freeze([
+        Object.freeze({
+          label: '후보집합 재현',
+          display: `${matchedCandidateCount}/${expectedCandidateCount}`,
+          numerator: matchedCandidateCount,
+          denominator: expectedCandidateCount,
+          reading: '제출한 후보 8곳의 집합은 다시 확인됨',
+          symbol: '=',
+        }),
+        Object.freeze({
+          label: '버스–의료 신호 중복',
+          display: feedbackAudit.componentDependence.spearmanRho === null
+            ? '자료 연결 대기'
+            : `ρ ${feedbackAudit.componentDependence.spearmanRho.toFixed(3)}`,
+          percent: Math.abs(finite(feedbackAudit.componentDependence.spearmanRho)) * 100,
+          reading: '두 항이 비슷한 동 순서를 만들어 중복 반영 위험',
+          symbol: '!',
+        }),
+        Object.freeze({
+          label: '단일 구성요소 제거',
+          display: `${feedbackAudit.ablation.singleRemovalReplacementCount}/${feedbackAudit.ablation.baselineCount} 교체`,
+          numerator: feedbackAudit.ablation.singleRemovalReplacementCount,
+          denominator: feedbackAudit.ablation.baselineCount,
+          reading: '버스 또는 명시적 의료거리 항을 하나 빼면 각각 3곳 교체',
+          symbol: '↺',
+        }),
+      ]),
+      villageBusSnapshot: villageSnapshot,
       dataBoundary: Object.freeze({
         excludes: Object.freeze(['개인정보', '실제 출발지·목적지 자료', '자동 정책추천']),
         interpretation: '공개데이터 대리신호만으로 정책을 확정하지 않고 담당자가 현장을 확인합니다.',
@@ -338,7 +460,7 @@
       .filter(Boolean));
 
     return {
-      schemaVersion: 'field-checklist-v1',
+      schemaVersion: 'field-checklist-v2',
       savedAt: normalizeSavedAt(savedAt),
       decisionScope: '현장조사 우선검토',
       decisionNotice: '정책 도입 확정 아님',
@@ -350,14 +472,36 @@
       evidenceSnapshot: {
         candidateSet: model.candidateSet.display,
         scoreVerification: model.scoreVerification.status,
-        boundedSensitivity: model.robustness.bounded.display,
-        boundaryAudit: model.robustness.boundary.display,
+        busFacilitySpearmanRho: model.feedbackAudit?.componentDependence?.spearmanRho ?? null,
+        busVif: model.feedbackAudit?.componentDependence?.vif?.bus ?? null,
+        facilityVif: model.feedbackAudit?.componentDependence?.vif?.facility ?? null,
+        singleComponentRemovalReplacementCount: model.feedbackAudit?.ablation?.singleRemovalReplacementCount ?? null,
+        combinedComponentRemovalReplacementCount: model.feedbackAudit?.ablation?.combinedRemovalReplacementCount ?? null,
+        stableCoreDongs: [...(model.feedbackAudit?.ablation?.stableCoreDongs || [])],
+        queenHhOnly: Boolean(
+          model.feedbackAudit?.spatial?.queenSignificantHh
+          && !model.feedbackAudit?.spatial?.otherMethodsSignificantHh
+        ),
+        villageBusStaticPresence: model.villageBusSnapshot ? {
+          sourceDate: model.villageBusSnapshot.sourceDate,
+          servingStops: model.villageBusSnapshot.servingStopCount,
+          allStops: model.villageBusSnapshot.allStopCount,
+          uniqueRouteNames: model.villageBusSnapshot.uniqueRouteCount,
+          limitation: model.villageBusSnapshot.interpretation,
+        } : null,
         inclusionIsProbability: false,
       },
       fieldChecks: CHECKLIST_ITEMS.map((item) => ({
         id: item.id,
         label: item.label,
         checked: selectedIds.has(item.id),
+      })),
+      dataRequests: CHECKLIST_ITEMS.map((item) => ({
+        id: item.id,
+        title: item.label,
+        requested: selectedIds.has(item.id),
+        purpose: item.description,
+        handlingRule: '개인을 식별하지 않는 집계자료만 이 파일에 결합',
       })),
       alternativeQuestions: POLICY_QUESTIONS.map((item) => ({
         id: item.id,
@@ -367,8 +511,13 @@
       })),
       humanReview: {
         status: 'investigate',
-        notice: '개인정보 입력 없이 교통·복지 담당자가 공동 검토',
+        notice: '개인정보·인증정보 입력 없이 교통·복지 담당자가 공동 검토',
       },
+      limitations: [
+        '공개데이터 대리진단이며 정책 도입 우선순위나 효과를 확정하지 않습니다.',
+        '마을버스 정적 노선 표기는 배차·운행량·방향·목적지·실제 서비스 중복을 증명하지 않습니다.',
+        '실제 대상자 자료는 승인된 내부 환경에서 비식별 집계 후 별도 검증해야 합니다.',
+      ],
     };
   }
 

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="570" viewBox="0 0 1200 570" role="img" aria-labelledby="title desc">
+<title id="title">DSS 상위 구성요소 제거 시 기준 Top8 교체</title>
+<desc id="desc">상위 DSS 항의 기술적 ablation이며 인과효과·최적 명세를 뜻하지 않는다. 특히 CAG=demand-RI라서 명시적 의료거리 항을 제거해도 CAG 내부 시설접근성 RI는 남는다. 4개 명세 포함수는 선정확률이 아니다.</desc>
+<style>
+text{font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#15213A} .title{font-size:27px;font-weight:700} .subtitle{font-size:15px;fill:#526079} .label{font-size:16px;font-weight:700} .value{font-size:15px;font-weight:700} .note{font-size:13px;fill:#526079} .footer{font-size:14px;fill:#283754}
+</style>
+<rect width="1200" height="570" fill="#FFFFFF"/>
+<text id="title-text" x="42" y="47" class="title">DSS 상위 구성요소 ablation: Top8은 얼마나 바뀌는가</text>
+<text x="42" y="76" class="subtitle">44동 z표준화 · 현행 비교 3동 제외 · 남은 기준가중치 비율 재정규화 · 포함수는 확률이 아님</text>
+<text x="42" y="142" class="label">기준 3요소</text><rect x="300" y="118" width="620" height="28" rx="7" fill="#E8EEF7"/><rect x="300" y="118" width="620.000" height="28" rx="7" fill="#3558D4"/><text x="936" y="138" class="value">Jaccard 1.000</text><text x="300" y="168" class="note">이탈: 없음 · 진입: 없음</text><text x="42" y="220" class="label">버스 항 제거</text><rect x="300" y="196" width="620" height="28" rx="7" fill="#E8EEF7"/><rect x="300" y="196" width="281.818" height="28" rx="7" fill="#3558D4"/><text x="936" y="216" class="value">Jaccard 0.455</text><text x="300" y="246" class="note">이탈: 능곡동, 송포동, 주교동 · 진입: 성사2동, 일산1동, 중산1동</text><text x="42" y="298" class="label">명시적 의료거리 항 제거</text><rect x="300" y="274" width="620" height="28" rx="7" fill="#E8EEF7"/><rect x="300" y="274" width="281.818" height="28" rx="7" fill="#3558D4"/><text x="936" y="294" class="value">Jaccard 0.455</text><text x="300" y="324" class="note">이탈: 능곡동, 송포동, 효자동 · 진입: 성사2동, 일산1동, 중산1동</text><text x="42" y="376" class="label">버스·명시적 의료거리 항 동시 제거</text><rect x="300" y="352" width="620" height="28" rx="7" fill="#E8EEF7"/><rect x="300" y="352" width="206.667" height="28" rx="7" fill="#3558D4"/><text x="936" y="372" class="value">Jaccard 0.333</text><text x="300" y="402" class="note">이탈: 가좌동, 능곡동, 송포동, 효자동 · 진입: 성사2동, 일산1동, 중산1동, 행신4동</text>
+<line x1="42" y1="466" x2="1158" y2="466" stroke="#D7DEEA"/>
+<text x="42" y="496" class="footer">4/4 안정핵심: 고양동, 관산동, 행주동</text>
+<text x="42" y="523" class="footer">조건부 기준후보: 가좌동, 능곡동, 송포동, 주교동, 효자동</text>
+<text x="42" y="550" class="note">주의: 명시적 의료거리 항을 제거해도 CAG 내부 RI 시설접근성은 남는다.</text>
+</svg>

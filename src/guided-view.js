@@ -9,7 +9,7 @@
 
   const STEPS = [
     { id: 1, label: '판단 질문', short: '질문' },
-    { id: 2, label: '행주동 신호', short: '신호' },
+    { id: 2, label: '지역 신호', short: '신호' },
     { id: 3, label: '근거 확실성', short: '근거' },
     { id: 4, label: '확인할 빈칸', short: '빈칸' },
     { id: 5, label: '대안별 조사', short: '대안' },
@@ -17,12 +17,12 @@
   ];
 
   const DEFAULT_FIELD_CHECKS = [
-    { id: 'trip-purpose', label: '주요 이용 서비스와 목적지 유형', hint: '병원·복지관·장보기 등 실제 이동 목적을 확인합니다.' },
-    { id: 'trip-pattern', label: '이용 빈도·시간대·방향 집중', hint: '언제, 얼마나 자주, 어느 방향으로 이동하는지 확인합니다.' },
-    { id: 'booking-access', label: '앱·전화 호출 가능성과 미이용 사유', hint: '디지털 접근성과 보호자·상담원 지원 필요를 확인합니다.' },
-    { id: 'mobility-support', label: '휠체어·승하차·동행지원 필요', hint: '차량 접근성과 돌봄 인력 동행 조건을 확인합니다.' },
-    { id: 'service-substitute', label: '방문서비스 대체 가능성과 제공기관 수용력', hint: '이동 대신 서비스가 찾아갈 수 있는지 확인합니다.' },
-    { id: 'operation-data', label: '차량·운영인력·호출·대기·OD·비용 자료', hint: '효과와 비용을 검증할 최소 운영자료를 확인합니다.' },
+    { id: 'aggregate-target-demand', label: '실제 대상자 규모와 서비스별 이동수요', hint: '비식별 집계 단위로 대상자 수와 미충족 수요를 확인합니다.' },
+    { id: 'service-location-capacity', label: '62개 서비스의 실제 제공 위치와 수용력', hint: '목록 수가 아닌 제공기관 위치·운영시간·정원을 확인합니다.' },
+    { id: 'village-bus-operation', label: '마을버스 배차·운행시간·방향·목적지', hint: '정적 노선 존재를 넘어 실제 운행과 돌봄 목적지 연결을 확인합니다.' },
+    { id: 'operational-boundary-od', label: '운영경계·OD·보행·환승 조건', hint: '행정동 경계가 아닌 실제 이동권과 환승 부담을 확인합니다.' },
+    { id: 'access-support', label: '앱·전화·승하차·동행지원 접근성', hint: '호출수단과 휠체어·보호자·돌봄인력 지원을 확인합니다.' },
+    { id: 'alternative-capacity-cost', label: '대안별 운영자원·비용과 방문서비스 대체성', hint: '차량·인력·대기·비용과 제공기관 수용력을 확인합니다.' },
   ];
 
   const DEFAULT_POLICY_QUESTIONS = [
@@ -66,7 +66,7 @@
     const area = model.area || model.selectedArea || {};
     return {
       code: display(area.code || area.id, ''),
-      dong: display(area.dong || area.name, '행주동'),
+      dong: display(area.dong || area.name, '관산동'),
       district: display(area.district || area.gu, '덕양구'),
     };
   }
@@ -176,7 +176,7 @@
         <h1 id="guided-title">오늘 무엇을 판단할까요?</h1>
         <p class="guided-lead"><strong>${esc(area.dong)}</strong>을 사업 도입지가 아니라 <strong>현장조사 대상</strong>으로 올릴지 검토합니다.</p>
 
-        <div class="guided-funnel" aria-label="검토 범위: 고양시 행정동, 제출 후보, 행주동 순서">
+        <div class="guided-funnel" aria-label="검토 범위: 고양시 행정동, 제출 후보, ${esc(area.dong)} 순서">
           <div class="guided-funnel-node"><span>전체 범위</span><strong>고양시 ${esc(areaCount)}개 동</strong></div>
           <span class="guided-funnel-arrow" aria-hidden="true">→</span>
           <div class="guided-funnel-node"><span>제출 후보</span><strong>${esc(candidateCount)}곳</strong></div>
@@ -203,7 +203,7 @@
     return value === undefined || value === null || value === '' ? '자료 연결 대기' : `${value}${alreadyFormatted ? '' : unit}`;
   }
 
-  function renderSignalMetric(metric) {
+  function renderSignalMetric(metric, areaDong) {
     const direction = metric.direction || metric.reading || '';
     return `
       <div class="guided-signal-row">
@@ -212,7 +212,7 @@
           <span>${esc(metric.definition || metric.subtitle || '')}</span>
         </div>
         <dl class="guided-signal-values">
-          <div><dt>행주동</dt><dd class="is-area">${esc(metricValue(metric, 'area'))}</dd></div>
+          <div><dt>${esc(areaDong)}</dt><dd class="is-area">${esc(metricValue(metric, 'area'))}</dd></div>
           <div><dt>고양시</dt><dd class="is-city">${esc(metricValue(metric, 'city'))}</dd></div>
         </dl>
         <p class="guided-signal-reading">${esc(direction || '비교 기준 확인 필요')}</p>
@@ -234,12 +234,10 @@
   function renderStepTwo(model) {
     const area = selectedArea(model);
     const metrics = asList(model.signalMetrics || model.signals || model.metrics);
-    const signalHeadline = model.signalHeadline || (area.dong === '행주동'
-      ? '고령 수요는 높고, 버스 연결은 낮게 관찰됐습니다.'
-      : `${area.dong}의 수요·버스·의료 접근 신호를 고양시 기준과 비교합니다.`);
-    const signalSubheadline = model.signalSubheadline || (area.dong === '행주동'
-      ? '의료 접근은 시 평균과 비슷합니다. 실제 이동 수요는 현장에서 확인해야 합니다.'
-      : '공개데이터 비교는 현장조사 순서를 돕는 대리신호이며 실제 이동 수요가 아닙니다.');
+    const signalHeadline = model.evidenceFraming?.headline || model.signalHeadline
+      || `${area.dong}의 수요·버스·의료 접근 신호를 고양시 기준과 비교합니다.`;
+    const signalSubheadline = model.evidenceFraming?.subheadline || model.signalSubheadline
+      || '공개데이터 비교는 현장조사 순서를 돕는 대리신호이며 실제 이동 수요가 아닙니다.';
     return `
       <section class="guided-page" aria-labelledby="guided-title">
         ${eyebrow(2, `${area.dong}의 공개데이터 신호`)}
@@ -250,8 +248,8 @@
         <div class="guided-evidence-layout">
           <div class="guided-signal-list">
             <div class="guided-signal-legend" aria-label="비교 범례"><span class="is-area">${esc(area.dong)}</span><span class="is-city">고양시 평균</span></div>
-            ${metrics.length ? metrics.map(renderSignalMetric).join('') : `<div class="guided-data-empty"><strong>비교 수치를 연결하고 있습니다.</strong><span>고령 수요·버스 연결·의료 접근 순서로 표시됩니다.</span></div>`}
-            <p class="guided-reading-summary"><span aria-hidden="true"></span>${esc(model.signalSummary || '두 신호는 취약 방향, 한 신호는 평균 수준입니다.')}</p>
+            ${metrics.length ? metrics.map((metric) => renderSignalMetric(metric, area.dong)).join('') : `<div class="guided-data-empty"><strong>비교 수치를 연결하고 있습니다.</strong><span>고령 수요·버스 연결·의료 접근 순서로 표시됩니다.</span></div>`}
+            <p class="guided-reading-summary"><span aria-hidden="true"></span>${esc(model.evidenceFraming?.summary || model.signalSummary || '공개 신호와 실제 서비스 도달을 구분해 확인합니다.')}</p>
           </div>
           <div class="guided-map-panel">
             <p><strong>고양시 44개 행정동</strong><span>${esc(area.dong)} 위치를 먼저 확인합니다.</span></p>
@@ -301,8 +299,8 @@
       <section class="guided-page" aria-labelledby="guided-title">
         ${eyebrow(3, '재분석으로 반복 여부를 확인합니다')}
         <h1 id="guided-title">이 신호는 얼마나 반복되나요?</h1>
-        <p class="guided-lead">${esc(area.dong)}은 여러 분석 조건에서 다시 포함됐지만, 순위와 정책 효과가 확정된 것은 아닙니다.</p>
-        <p class="guided-definition-note"><span aria-hidden="true">i</span><strong>포함 횟수이며 선정확률이 아닙니다.</strong></p>
+        <p class="guided-lead">후보 8곳은 재현됐지만, 구성요소 간 중복과 항 제거 민감도가 확인됐습니다.</p>
+        <p class="guided-definition-note"><span aria-hidden="true">i</span><strong>핵심 3개만 먼저 봅니다. 상관·교체 수는 선정확률이 아닙니다.</strong></p>
 
         ${checks.length ? `<ol class="guided-robustness-list">${checks.map(renderRobustness).join('')}</ol>` : `<div class="guided-data-empty"><strong>재검증 결과를 연결하고 있습니다.</strong><span>후보집합 재현·제한 가중치·전체 경계감사 순서로 표시됩니다.</span></div>`}
 
@@ -311,12 +309,41 @@
           <div><span class="guided-certainty-icon is-open" aria-hidden="true">−</span><p><strong>확정되지 않은 것</strong><span>${esc(model.unconfirmedText || 'DSS 값·내부순위·DRT 효과는 재현되지 않았습니다.')}</span></p></div>
         </div>
 
-        <details class="guided-disclosure"><summary>전문 재분석 보기</summary><div>${esc(model.robustnessMethodNote || '제한된 가중치 검토와 전체 경계감사는 서로 다른 범위입니다. 같은 확률로 해석하지 않습니다.')}</div></details>
+        ${renderProfessionalAnalysis(model, area)}
         ${actionBar({ previousStep: 2, step: 4, label: '다음: 공개데이터가 모르는 것은?' })}
       </section>`;
   }
 
+  function fixedOrPending(value, digits = 2) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number.toFixed(digits) : '자료 연결 대기';
+  }
+
+  function renderProfessionalAnalysis(model, area) {
+    const audit = model.feedbackAudit;
+    if (!audit) {
+      return `<details class="guided-disclosure"><summary>전문 재분석 보기</summary><div>${esc(model.robustnessMethodNote || '세부 재분석 자료를 연결하고 있습니다.')}</div></details>`;
+    }
+    const stableCore = asList(audit.ablation?.stableCoreDongs).join(' · ') || '자료 연결 대기';
+    const qFdr = fixedOrPending(audit.spatial?.queenQFdr, 4);
+    const spatialReading = audit.spatial?.queenSignificantHh && !audit.spatial?.otherMethodsSignificantHh
+      ? `${area.dong}은 Queen 인접에서만 HH(q=${qFdr})였습니다.`
+      : audit.spatial?.interpretation || '공간 이웃 정의별 결과 확인이 필요합니다.';
+    return `
+      <details class="guided-disclosure guided-analysis-detail">
+        <summary>전문 재분석 보기</summary>
+        <dl>
+          <div><dt>선형상관 / 순위상관</dt><dd>r ${esc(fixedOrPending(audit.componentDependence?.pearsonR, 3))} · ρ ${esc(fixedOrPending(audit.componentDependence?.spearmanRho, 3))}</dd></div>
+          <div><dt>VIF</dt><dd>CAG ${esc(fixedOrPending(audit.componentDependence?.vif?.cag))} · 버스 ${esc(fixedOrPending(audit.componentDependence?.vif?.bus))} · 의료 ${esc(fixedOrPending(audit.componentDependence?.vif?.facility))}</dd></div>
+          <div><dt>안정 핵심</dt><dd>${esc(stableCore)}</dd></div>
+          <div><dt>공간 민감도</dt><dd>${esc(spatialReading)}</dd></div>
+        </dl>
+        <p>버스·의료 항을 함께 빼면 최대 ${esc(display(audit.ablation?.combinedRemovalReplacementCount, '자료 연결 대기'))}/8이 교체됩니다. CAG 안의 시설 접근성은 남으므로 구성타당도 검토가 더 필요합니다.</p>
+      </details>`;
+  }
+
   function normalizeRobustness(model) {
+    if (Array.isArray(model.feedbackRobustness) && model.feedbackRobustness.length) return model.feedbackRobustness.slice(0, 3);
     if (Array.isArray(model.robustnessChecks) && model.robustnessChecks.length) return model.robustnessChecks;
     if (Array.isArray(model.robustness) && model.robustness.length) return model.robustness;
     const rows = [];
@@ -364,11 +391,14 @@
 
   function renderStepFour(model, state) {
     const items = asList(model.fieldChecks || model.unknownChecks, DEFAULT_FIELD_CHECKS);
+    const area = selectedArea(model);
     return `
       <section class="guided-page guided-page-checks" aria-labelledby="guided-title">
         ${eyebrow(4, '공개데이터의 빈칸을 현장 질문으로 바꿉니다')}
         <h1 id="guided-title">현장에서 무엇을 확인해야 하나요?</h1>
         <p class="guided-lead">아래 항목은 공개데이터만으로 알 수 없습니다. 조사할 항목을 체크해 주세요.</p>
+
+        ${renderVillageBusScreening(model, area)}
 
         <fieldset class="guided-check-fieldset">
           <legend class="guided-visually-hidden">현장조사 확인 항목</legend>
@@ -378,6 +408,17 @@
         <p class="guided-boundary-note">개인 위치·실제 이동경로·정책 효과는 이 화면에 포함하지 않습니다.</p>
         ${actionBar({ previousStep: 3, step: 5, label: '다음: 어떤 대안을 가를까요?' })}
       </section>`;
+  }
+
+  function renderVillageBusScreening(model, area) {
+    const snapshot = model.villageBusSnapshot;
+    if (!snapshot) return '';
+    return `
+      <aside class="guided-village-screen" aria-label="${esc(area.dong)} 마을버스 정적 스크리닝">
+        <div><span>마을노선 표기 정류장</span><strong>${esc(snapshot.servingStopCount)}/${esc(snapshot.allStopCount)}</strong></div>
+        <div><span>고유 마을노선명</span><strong>${esc(snapshot.uniqueRouteCount)}개</strong></div>
+        <p><b>2025-08-25 정적 존재 확인</b>${esc(snapshot.interpretation)}</p>
+      </aside>`;
   }
 
   function policyAnswer(state, questionId) {

@@ -170,7 +170,7 @@
   const rankComparisons = DATA.rankComparisons || [];
   const officialContext = DATA.officialContext?.length ? DATA.officialContext : FALLBACK_CONTEXT;
   const sources = buildSources();
-  const selectedDefault = candidateByDong.get('행주동') || candidates[0];
+  const selectedDefault = candidateByDong.get('관산동') || candidates[0];
 
   if (!selectedDefault || candidates.length !== 8) {
     app.innerHTML = '<main class="fatal"><h1>후보 데이터 계약 오류</h1><p>후보 8개 동의 데이터가 모두 생성됐는지 확인해 주세요.</p></main>';
@@ -359,6 +359,10 @@
       : params.has('stage')
         ? 'analysis'
         : 'guided';
+    const legacyGuidedDefault = guidedStored.selectedCode === '4128163000'
+      && !params.get('dong')
+      && !guidedStored.feedbackFlowVersion;
+    if (legacyGuidedDefault) guidedStored.selectedCode = selectedDefault.code;
     const requestedCode = params.get('dong') || guidedStored.selectedCode || stored.selectedCode;
     const selected = candidateByCode.get(String(requestedCode)) || candidateByDong.get(requestedCode) || selectedDefault;
     const requestedMapCode = String(stored.mapAreaCode || selected.code);
@@ -444,6 +448,7 @@
       checks: state.guidedChecks,
       answers: state.guidedAnswers,
       questionIndex: state.guidedQuestionIndex,
+      feedbackFlowVersion: 2,
     };
     try {
       window.localStorage.setItem(STATE_KEY, JSON.stringify(analysisState));
@@ -556,15 +561,17 @@
       areaCount: allAreas.length,
       candidateCount: candidates.length,
       signalMetrics,
-      signalHeadline: `${agingHigher ? '고령 수요는 높고' : '고령 수요는 낮고'}, 버스 연결은 ${routesLower ? '낮게' : '높게'} 관찰됐습니다.`,
-      signalSubheadline: facilityGapRatio <= 0.1
+      signalHeadline: model.evidenceFraming?.headline
+        || `${agingHigher ? '고령 수요는 높고' : '고령 수요는 낮고'}, 버스 연결은 ${routesLower ? '낮게' : '높게'} 관찰됐습니다.`,
+      signalSubheadline: model.evidenceFraming?.subheadline || (facilityGapRatio <= 0.1
         ? '의료시설 거리는 시 평균과 비슷합니다. 실제 이동 수요는 현장에서 확인해야 합니다.'
-        : `의료시설 거리는 시 평균보다 ${model.signals[2].value > model.signals[2].benchmark ? '멀게' : '가깝게'} 관찰됐습니다. 실제 이동시간은 아직 모릅니다.`,
-      signalSummary: `${agingHigher ? '고령 수요 취약 신호' : '고령 수요 신호'} · ${routesLower ? '버스 연결 취약 신호' : '버스 연결 공급 신호'} · 의료 접근 ${facilityGapRatio <= 0.1 ? '평균 수준' : '차이 관찰'}`,
+        : `의료시설 거리는 시 평균보다 ${model.signals[2].value > model.signals[2].benchmark ? '멀게' : '가깝게'} 관찰됐습니다. 실제 이동시간은 아직 모릅니다.`),
+      signalSummary: model.evidenceFraming?.summary
+        || `${agingHigher ? '고령 수요 취약 신호' : '고령 수요 신호'} · ${routesLower ? '버스 연결 취약 신호' : '버스 연결 공급 신호'} · 의료 접근 ${facilityGapRatio <= 0.1 ? '평균 수준' : '차이 관찰'}`,
       methodNote: '인구·시설 2026-06-30, 버스 2025-08-25, 행정동 경계 2026-04-01을 결합했습니다. 실제 통행시간은 포함하지 않습니다.',
-      confirmedText: `${model.selectedArea.dong}은 제출 후보집합과 두 가중치 검토 범위에서 반복해 포함됐습니다.`,
-      unconfirmedText: `${model.scoreVerification.interpretation}. DRT 효과·비용은 아직 검증하지 않았습니다.`,
-      robustnessMethodNote: '45개는 분석자가 명시한 제한 범위, 231개는 전체 비음수 simplex 경계감사입니다. 포함 횟수는 확률이 아닙니다.',
+      confirmedText: `후보집합 8/8은 재현됐고, 네 구성요소 명세에 공통인 핵심은 ${model.feedbackAudit?.ablation?.stableCoreDongs?.join('·') || '확인 중'}입니다.`,
+      unconfirmedText: `${model.scoreVerification.interpretation}. 마을버스 중복·DRT 효과·비용은 아직 검증하지 않았습니다.`,
+      robustnessMethodNote: '순위상관은 지표 중복 위험을, 구성요소 제거는 후보 교체 폭을 보여줍니다. 둘 다 선정확률이나 정책효과가 아닙니다.',
       fieldChecks: GUIDED.CHECKLIST_ITEMS,
       policyQuestions: GUIDED.POLICY_QUESTIONS,
       confirmedSignals: [
@@ -1447,7 +1454,7 @@
         <div class="modal-head"><div><span class="eyebrow">2분 시연</span><h2>심사위원에게 보여 줄 흐름</h2></div><button class="icon-button" data-action="close-overlay" aria-label="닫기">×</button></div>
         <div class="help-steps">
           <div class="help-step"><strong>공식 수치의 뜻부터 잠급니다</strong><span>2.9만은 추정치, 62는 서비스 목록, 1,972는 조사대상임을 20초 안에 설명합니다.</span></div>
-          <div class="help-step"><strong>행주동을 선택해 4개 수치를 읽습니다</strong><span>고령화율 27.7%, 70+ 1인세대 746명, 노선 3.05개, 시설거리 1.36km를 도시 기준과 비교합니다.</span></div>
+          <div class="help-step"><strong>관산동의 상충 신호를 읽습니다</strong><span>고령화율 29.7%는 높지만 노선 4.61개, 의료시설 거리 0.83km로 공개 공급신호는 양호합니다. 그래서 실제 서비스 도달을 추가 확인합니다.</span></div>
           <div class="help-step"><strong>후보집합과 점수 재현을 분리합니다</strong><span>8/8 집합은 일치하지만 DSS 값·내부순위는 불일치했다고 투명하게 밝힙니다.</span></div>
           <div class="help-step"><strong>5개 대안을 비교하고 다음 데이터를 요청합니다</strong><span>DRT를 자동 추천하지 않고 현장수요·운영비·접근가능 차량 조건을 확인합니다.</span></div>
         </div>
@@ -1845,4 +1852,5 @@
   });
 
   render();
+  window.DDOL_API_CONNECTIONS?.mount();
 })();

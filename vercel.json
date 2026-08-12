@@ -3,7 +3,20 @@
   "outputDirectory": ".",
   "cleanUrls": false,
   "trailingSlash": false,
+  "functions": {
+    "api/public-data.js": {
+      "maxDuration": 15
+    }
+  },
   "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, private" },
+        { "key": "Pragma", "value": "no-cache" },
+        { "key": "Referrer-Policy", "value": "no-referrer" }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [

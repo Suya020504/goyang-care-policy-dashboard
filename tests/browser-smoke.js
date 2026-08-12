@@ -205,7 +205,7 @@ async function main() {
     scroll: document.documentElement.scrollWidth,
   }));
   assert.ok(overflow.scroll <= overflow.viewport, `모바일 가로 overflow: ${JSON.stringify(overflow)}`);
-  assert.equal(await page.locator('.candidate-title h2').innerText(), '행주동');
+  assert.equal(await page.locator('.candidate-title h2').innerText(), '관산동');
   assert.match(await page.locator('#app-main').innerText(), /증거 \/ 분석 정보/);
   await page.screenshot({ path: path.join(root, 'screenshots', '06_후보비교_모바일.png'), fullPage: true });
   await page.locator('[data-stage="3"]').first().click();

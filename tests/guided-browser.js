@@ -56,12 +56,12 @@ async function main() {
   assert.equal(await page.locator('.stage-nav').count(), 0);
   assert.match(await page.locator('h1').innerText(), /오늘 무엇을 판단/);
   assert.match(await page.locator('#app-main').innerText(), /사업 도입지가 아니라.*현장조사 대상/);
-  assert.equal(await page.locator('[data-guided-field="selectedCode"]').inputValue(), '4128163000');
+  assert.equal(await page.locator('[data-guided-field="selectedCode"]').inputValue(), '4128160000');
   assertNoOverflow(page, '안내 1단계 1440px');
 
   await goNext(page);
   assert.match(page.url(), /step=2/);
-  assert.match(await page.locator('h1').innerText(), /왜 행주동을 먼저 확인/);
+  assert.match(await page.locator('h1').innerText(), /왜 관산동을 먼저 확인/);
   assert.equal(await page.locator('.guided-map-svg path').count(), 44);
   assert.equal(await page.locator('.guided-map-svg path.is-candidate').count(), 8);
   assert.equal(await page.locator('.guided-map-svg path.is-selected').count(), 1);
@@ -74,23 +74,27 @@ async function main() {
   assert.notEqual(mapFills.candidate, mapFills.other);
   assert.notEqual(mapFills.other, 'rgb(0, 0, 0)');
   const signals = await page.locator('.guided-signal-list').innerText();
-  assert.match(signals, /27\.7%/);
+  assert.match(signals, /29\.7%/);
   assert.match(signals, /19\.4%/);
-  assert.match(signals, /3\.05/);
+  assert.match(signals, /4\.61/);
   assert.match(signals, /3\.77/);
-  assert.match(signals, /1\.36km/);
+  assert.match(signals, /0\.83km/);
   assert.match(signals, /1\.31km/);
+  assert.match(await page.locator('#app-main').innerText(), /공개 공급 신호도 양호/);
 
   await goNext(page);
   const confidence = await page.locator('#app-main').innerText();
   assert.match(confidence, /8\/8/);
-  assert.match(confidence, /45\/45/);
-  assert.match(confidence, /206\/231/);
+  assert.match(confidence, /ρ 0\.931/);
+  assert.match(confidence, /3\/8 교체/);
   assert.match(confidence, /선정확률이 아닙니다/);
-  assert.match(confidence, /DSS 값과 후보 내부순위/);
+  assert.match(confidence, /고양동\s*·\s*관산동\s*·\s*행주동/);
 
   await goNext(page);
   assert.equal(await page.locator('.guided-check-row input[type="checkbox"]').count(), 6);
+  assert.match(await page.locator('.guided-village-screen').innerText(), /127\/129/);
+  assert.match(await page.locator('.guided-village-screen').innerText(), /8개/);
+  assert.match(await page.locator('.guided-village-screen').innerText(), /배차.*증명하지 않습니다/);
   assert.equal(await page.locator('.guided-check-row input[type="checkbox"]:checked').count(), 0);
   // 구석 토스트를 폐기하고, 사용자의 시선이 있는 자리에 상시 오류 슬롯을 둔다.
   // 화면을 다시 그리지 않으므로 방금 누른 버튼의 포커스가 유지되어야 한다.
@@ -122,27 +126,29 @@ async function main() {
   }
 
   assert.match(page.url(), /step=6/);
-  assert.match(await page.locator('h1').innerText(), /행주동 현장조사 체크리스트/);
+  assert.match(await page.locator('h1').innerText(), /관산동 현장조사 체크리스트/);
   assert.equal(await page.locator('.guided-final-checks input[type="checkbox"]').count(), 6);
   assert.equal(await page.locator('.guided-final-checks input[type="checkbox"]:checked').count(), 2);
   assert.match(await page.locator('.guided-review-note').innerText(), /개인정보를 입력받지 않습니다/);
   const downloadPromise = page.waitForEvent('download');
   await page.locator('[data-action="guided-save"]').click();
   const download = await downloadPromise;
-  assert.match(download.suggestedFilename(), /현장조사_체크리스트_행주동/);
+  assert.match(download.suggestedFilename(), /현장조사_체크리스트_관산동/);
   const stream = await download.createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);
   const payload = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-  assert.equal(payload.schemaVersion, 'field-checklist-v1');
-  assert.equal(payload.area.dong, '행주동');
+  assert.equal(payload.schemaVersion, 'field-checklist-v2');
+  assert.equal(payload.area.dong, '관산동');
+  assert.equal(payload.dataRequests.length, 6);
+  assert.equal(payload.evidenceSnapshot.villageBusStaticPresence.servingStops, 127);
   assert.equal(payload.fieldChecks.length, 6);
   assert.equal(payload.fieldChecks.filter((item) => item.checked).length, 2);
   assert.equal(payload.alternativeQuestions.length, 5);
   assert.equal(payload.alternativeQuestions[0].answer, 'yes');
   assert.equal(payload.alternativeQuestions[4].answer, 'no');
   assert.equal(payload.humanReview.status, 'investigate');
-  assert.match(payload.humanReview.notice, /개인정보 입력 없이/);
+  assert.match(payload.humanReview.notice, /개인정보.*입력 없이/);
   assert.equal('note' in payload, false);
   assert.equal('recommendation' in payload, false);
   assert.equal('score' in payload, false);
@@ -150,7 +156,7 @@ async function main() {
   await page.locator('[data-action="open-analysis"]').click();
   assert.equal(await page.locator('.stage-nav').count(), 1);
   assert.match(page.url(), /view=analysis/);
-  assert.match(page.url(), /dong=4128163000/);
+  assert.match(page.url(), /dong=4128160000/);
   await page.locator('[data-view="guided"]').click();
   assert.equal(await page.locator('.guided-app').count(), 1);
   assert.match(page.url(), /step=6/);
@@ -158,7 +164,7 @@ async function main() {
   await page.evaluate(() => window.localStorage.setItem('ddol-dashboard-guided-v1', JSON.stringify({
     step: 1,
     visitedStep: 1,
-    selectedCode: '4128163000',
+    selectedCode: '4128160000',
     checks: [],
     answers: {},
     note: '구형 민감 메모',
