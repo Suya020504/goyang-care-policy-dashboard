@@ -10,6 +10,7 @@ tmp/
 test-results/
 playwright-report/
 screenshots/
+presentation/export/
 .DS_Store
 Thumbs.db
 # 작업 중 원본 백업 — 공개 저장소에 올리지 않는다

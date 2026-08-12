@@ -34,7 +34,7 @@ function loadPresenterData() {
   return JSON.parse(JSON.stringify(sandbox.window.GOYANG_PRESENTER_SCRIPT));
 }
 
-test('관객 덱은 28장(본편 17 + 부록 11)이고 발표자 대본 번들과 분리된다', () => {
+test('관객 덱은 29장(본편 17 + 부록 12)이고 발표자 대본 번들과 분리된다', () => {
   const html = read('presentation/index.html');
   const css = read('presentation/presentation.css');
   const audienceCorpus = fs.readdirSync(PRESENTATION)
@@ -42,63 +42,66 @@ test('관객 덱은 28장(본편 17 + 부록 11)이고 발표자 대본 번들�
     .map((name) => fs.readFileSync(path.join(PRESENTATION, name), 'utf8'))
     .join('\n');
 
-  assert.equal((html.match(/class="slide(?:\s|\")/g) || []).length, 28);
-  for (let slide = 1; slide <= 28; slide += 1) {
+  assert.equal((html.match(/class="slide(?:\s|\")/g) || []).length, 29);
+  for (let slide = 1; slide <= 29; slide += 1) {
     assert.match(html, new RegExp(`data-slide="${slide}"`));
   }
   assert.doesNotMatch(audienceCorpus, /GOYANG_PRESENTER_SCRIPT|script-data\.js|durationSeconds|transitionSeconds|demoSeconds/);
   assert.doesNotMatch(html, /말할 내용|현재 대본 복사|발표자 콘솔/);
   assert.match(html, /\.\.\/public\/data\/data\.js/);
   assert.match(html, /\.\.\/public\/data\/pro_analysis\.js/);
+  assert.match(html, /\.\.\/public\/data\/welfare_destinations\.js/);
   assert.match(html, /\.\.\/public\/data\/boundaries\.js/);
   assert.match(css, /@page\s*\{\s*size:\s*1600px 900px;\s*margin:\s*0;\s*\}/);
   assertLocalReferencesExist('presentation/index.html');
 });
 
-test('관객 덱은 제출안과 재검증의 핵심 경계를 함께 표시한다', () => {
+test('관객 덱은 심사 피드백 보완 결과와 사실 경계를 함께 표시한다', () => {
   const html = read('presentation/index.html');
-  // 사실 경계는 표현이 바뀌어도 반드시 화면에 남아야 한다. 28장 개편본 기준으로 갱신.
+  // 실제자료 미확보, 지표 의존성, 기존교통, 복지 목적지, 시간 가정, DRT 단위가 모두 보여야 한다.
   const requiredClaims = [
-    /약 2\.9만/, /현재 이용자 수가 아님/, /62개 물리적 목적지가 아님/, /전체 돌봄 대상자가 아님/,
+    /약 2\.9만/, /현재 이용자 수(?:가)? 아님/, /62개 물리적 목적지(?:가)? 아님/, /전체 돌봄 대상자(?:가)? 아님/,
     /1,972/, /44개 동/, /8\s*\/\s*8|여덟 곳이 그대로 다시 나왔습니다/,
-    /점수와 순위는 어긋났습니다/, /주장 29개/, /45개/, /231개/, /고양동만/, /관산동/,
-    /공식 점수식도 효과 계산도 아닙니다/, /확률이 아닙니다/,
-    /실제 대상자 명부가 아닙니다/, /개인 위치도 62개 서비스 위치도 아닙니다/,
-    /도보 시간으로 읽지 않습니다/,
+    /관산동/, /\.931/, /후보 8곳 중 3곳|3\s*\/\s*8/, /127\s*\/\s*129/, /594/, /좌표/, /99\.6/, /4권역/,
+    /실제 대상자/, /서비스 위치/, /배차/, /OD/, /6단계/, /효과.*아닙니다|효과예측이 아니라/,
+    /45개/, /231개/, /선정확률|확률.*아니/,
   ];
   requiredClaims.forEach((pattern) => assert.match(html, pattern));
-  assert.match(html, /70세 이상 1인세대/);
-  assert.match(read('presentation/slides.js'), /35,295세대/);
-  assert.doesNotMatch(read('presentation/slides.js'), /1인세대[^\n<]*\d(?:[^\n<]{0,40})명/);
-  // 동별 유의 군집이 한 가지 이웃 정의에서만 남는다는 경계
-  assert.match(html, /맞닿은 이웃에서만|관산동은 한 정의뿐/);
-  assert.doesNotMatch(html, /신규 예산 불필요|운행비.*절반|탄소\s*478|재입원 예방/);
+  const fullPresentation = `${html}\n${read('presentation/slides.js')}\n${read('presenter/script-data.js')}`;
+  assert.doesNotMatch(fullPresentation, /신규 예산 불필요|운행비.*절반|탄소\s*478|재입원 예방/);
+  const retiredPhrases = [
+    '상관계수는 아직' + ' 계산 전',
+    '행주동은' + ' 본편',
+    '월요일 아침,' + ' 담당자 화면',
+    'MVP는 4' + '단계',
+    '확정 ' + '파일럿',
+  ];
+  retiredPhrases.forEach((phrase) => assert.ok(!fullPresentation.includes(phrase), `구형 문구 잔존: ${phrase}`));
 });
 
-test('발표자 대본은 12분 발표와 전환 1분, MVP 2분을 정확히 분리한다', () => {
+test('발표자 대본은 설명 11분대, 전환, MVP 2분을 중복 없이 분리한다', () => {
   const data = loadPresenterData();
   assert.ok(data);
   assert.equal(data.metadata.presenterCount, 1);
-  assert.equal(data.metadata.slideCount, 28);
-  assert.equal(data.slides.length, 28);
-  assert.equal(data.metadata.talkSeconds, 635);
-  assert.equal(data.metadata.appendixSeconds, 355);
+  assert.equal(data.metadata.slideCount, 29);
+  assert.equal(data.slides.length, 29);
+  assert.equal(data.metadata.talkSeconds, 670);
+  assert.equal(data.metadata.appendixSeconds, 300);
   assert.equal(data.metadata.mainSlideCount, 17);
-  assert.equal(data.metadata.appendixSlideCount, 11);
-  assert.equal(data.metadata.transitionSeconds, 60);
+  assert.equal(data.metadata.appendixSlideCount, 12);
+  assert.equal(data.metadata.transitionSeconds, 40);
   assert.equal(data.metadata.demoSeconds, 110);
-  assert.equal(data.metadata.eventSeconds, 695);
-  assert.equal(data.metadata.insertAfterSlide, 15);
-  assert.equal(data.slides.filter((s) => s.id <= 17).reduce((sum, slide) => sum + slide.durationSeconds, 0), 635);
-  assert.equal(data.slides.find((slide) => slide.id === 15).demoSteps.length, 4);
+  assert.equal(data.metadata.eventSeconds, 820);
+  assert.equal(data.metadata.eventLimitSeconds, 900);
+  assert.equal(data.metadata.insertAfterSlide, 16);
+  assert.equal(data.slides.filter((s) => s.id <= 17).reduce((sum, slide) => sum + slide.durationSeconds, 0), 670);
+  assert.equal(data.slides.find((slide) => slide.id === 16).demoSteps.length, 6);
 
   data.slides.forEach((slide, index) => {
     assert.equal(slide.id, index + 1);
     assert.ok(slide.title && slide.claim && slide.script && slide.caution && slide.transition);
     assert.ok(Array.isArray(slide.evidence) && slide.evidence.length > 0);
-    // 16번은 15번 시연이 실패했을 때만 쓰는 배타 실행 장이라 0초로 계상한다.
-    if (slide.id === 16) assert.equal(slide.durationSeconds, 0);
-    else assert.ok(slide.durationSeconds > 0);
+    assert.ok(slide.durationSeconds > 0);
   });
 });
 

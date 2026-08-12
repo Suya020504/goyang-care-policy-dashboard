@@ -66,7 +66,9 @@
   }
 
   function talkElapsedAt(index) {
-    return slides.slice(0, index + 1).reduce((total, slide) => total + slide.durationSeconds, 0);
+    return slides
+      .slice(0, Math.min(index + 1, metadata.mainSlideCount))
+      .reduce((total, slide) => total + slide.durationSeconds, 0);
   }
 
   // 요약 칩을 대본 데이터에서 렌더한다. 정적 문구로 두면 시간 배분이 바뀔 때마다 어긋난다.
@@ -82,9 +84,10 @@
 
   function eventElapsedAt(index) {
     const talk = talkElapsedAt(index);
-    // 시연 110초는 15번 장의 durationSeconds 로 이미 talkSeconds 에 들어 있다.
-    // 여기서 demoSeconds 를 또 더하면 이중 계상된다. 전환 시간만 더한다.
-    const extras = index + 1 > metadata.insertAfterSlide ? metadata.transitionSeconds : 0;
+    // 시연은 발표 대본 시간과 분리한다. 시연 장 다음 슬라이드부터 전환·시연 시간을 더한다.
+    const extras = index + 1 > metadata.insertAfterSlide
+      ? metadata.transitionSeconds + metadata.demoSeconds
+      : 0;
     return talk + extras;
   }
 
@@ -133,13 +136,16 @@
       { label: 'MVP 시연', seconds: metadata.demoSeconds, kind: 'demo' },
     ];
 
+    const bufferSeconds = Math.max(0, (metadata.eventLimitSeconds || metadata.eventSeconds) - metadata.eventSeconds);
+    if (bufferSeconds > 0) segments.push({ label: '질의·오류 대응 여유', seconds: bufferSeconds, kind: 'buffer' });
+
     segments.forEach((segment) => {
       const item = document.createElement('li');
       item.className = `run-segment run-${segment.kind}`;
       item.innerHTML = `<span>${segment.label}</span><strong>${formatTime(segment.seconds)}</strong>`;
       elements.runTrack.append(item);
     });
-    elements.runTotal.textContent = `총 ${formatTime(metadata.eventSeconds)}`;
+    elements.runTotal.textContent = `진행 ${formatTime(metadata.eventSeconds)} · 기준 ${formatTime(metadata.eventLimitSeconds || metadata.eventSeconds)}`;
   }
 
   function renderParagraphs(text) {
@@ -229,9 +235,10 @@
     const talkElapsed = talkElapsedAt(state.index);
     const eventElapsed = eventElapsedAt(state.index);
     const isDemoGate = slideNumber === metadata.insertAfterSlide;
+    const isAppendix = slideNumber > metadata.mainSlideCount;
 
     elements.slideNumber.textContent = `SLIDE ${String(slideNumber).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
-    elements.segmentBadge.textContent = isDemoGate ? '본 발표 → 시연' : '본 발표';
+    elements.segmentBadge.textContent = isAppendix ? '질의응답 부록' : (isDemoGate ? '본 발표 → 시연' : '본 발표');
     elements.segmentBadge.classList.toggle('is-demo-gate', isDemoGate);
     elements.heading.textContent = slide.title;
     elements.claim.textContent = slide.claim;
@@ -243,7 +250,7 @@
     elements.transition.textContent = slide.transition;
     elements.slidePicker.value = String(slideNumber);
     elements.previewStatus.textContent = `슬라이드 ${slideNumber}와 대본을 대조 중`;
-    elements.progressBar.style.width = `${(eventElapsed / metadata.eventSeconds) * 100}%`;
+    elements.progressBar.style.width = `${Math.min(100, (eventElapsed / metadata.eventSeconds) * 100)}%`;
 
     renderParagraphs(slide.script);
     renderEvidence(slide.evidence);

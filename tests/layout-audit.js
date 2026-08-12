@@ -1,4 +1,4 @@
-// 28장 전 슬라이드의 겹침·잘림·넘침을 측정하고 캡처한다.
+// 29장 전 슬라이드의 겹침·잘림·넘침을 측정하고 캡처한다.
 // 실행: node tests/layout-audit.js
 const path = require('path');
 const fs = require('fs');
@@ -10,11 +10,13 @@ const url = (slide) => `file://${path.join(ROOT, 'presentation/index.html').repl
 
 async function main() {
   fs.mkdirSync(OUT, { recursive: true });
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || chromium.executablePath(),
+  });
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const report = [];
 
-  for (let n = 1; n <= 28; n += 1) {
+  for (let n = 1; n <= 29; n += 1) {
     await page.goto(url(n), { waitUntil: 'load' });
     await page.waitForTimeout(220);
 
@@ -101,7 +103,7 @@ async function main() {
   fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify(report, null, 1), 'utf8');
 
   const bad = report.filter((r) => r.overlapCount || r.clippedCount || r.outsideCount || r.vOverflow);
-  console.log(`검사 28장 · 문제 있는 슬라이드 ${bad.length}장`);
+  console.log(`검사 29장 · 문제 있는 슬라이드 ${bad.length}장`);
   bad.forEach((r) => {
     console.log(`\n[${r.slide}] ${String(r.heading).trim().slice(0, 40)}`);
     if (r.overlapCount) { console.log(`  겹침 ${r.overlapCount}건`); r.overlaps.forEach((o) => console.log(`    · ${o.a}  ↔  ${o.b}  (${o.ratio})`)); }

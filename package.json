@@ -9,7 +9,8 @@
     "test:api-browser": "node tests/api-browser.js",
     "test:guided": "node tests/guided-browser.js",
     "test:presentation": "node tests/presentation-browser.js",
-    "test:layout": "node tests/layout-audit.js"
+    "test:layout": "node tests/layout-audit.js",
+    "export:presentation": "node scripts/export-presentation.js"
   },
   "engines": {
     "node": ">=20"

@@ -90,10 +90,11 @@ python -m http.server 4173
 
 - 관객 화면: `presentation/index.html`
 - 발표자 대본·대조 화면: `presenter/index.html`
-- 특정 슬라이드 직접 열기: `presentation/index.html?slide=11`
-- 발표자 화면 특정 슬라이드: `presenter/index.html?slide=15` (시연 큐가 있는 장)
+- 특정 슬라이드 직접 열기: `presentation/index.html?slide=9`
+- 발표자 화면 특정 슬라이드: `presenter/index.html?slide=16` (6단계 시연 큐)
+- 로컬 PNG 29장·PDF 내보내기: `npm.cmd run export:presentation` (`presentation/export/`, Git 제외)
 
-관객 화면은 28장 16:9 덱(본편 17장 + 질의응답용 부록 11장, A0~A10)이며 화살표·Home/End·전체화면·인쇄/PDF를 지원합니다. 부록 A0가 질문 인덱스라 번호만 부르면 해당 장으로 바로 넘어갑니다. 발표자 화면은 관객 슬라이드와 별도 대본을 나란히 보여 주며, 본편 635초·화면 전환 60초·MVP 시연 110초의 진행 시간을 계산합니다. 관객용 `presentation/**`에는 대본 데이터가 포함되지 않습니다.
+관객 화면은 29장 16:9 덱(본편 17장 + 질의응답용 부록 12장, A0~A11)입니다. 심사 피드백에 따라 관산동을 기본 사례로 두고, DSS 의존성, 마을버스 정적 스크리닝, 복지 목적지 준비도, 이동시간 가정표, 똑버스 권역 교정을 순서대로 설명합니다. 발표자 화면은 관객 슬라이드와 별도 대본을 나란히 보여 주며, 설명 670초·화면 전환 40초·MVP 시연 110초를 중복 없이 계산합니다. 관객용 `presentation/**`에는 대본 데이터가 포함되지 않습니다.
 
 ## 테스트
 

@@ -51,30 +51,41 @@ async function main() {
   await audience.setViewportSize({ width: 1440, height: 900 });
   await audience.goto(`${rootUrl('presentation/index.html')}?slide=1`, { waitUntil: 'load' });
   trace('audience slide 1 loaded');
-  assert.equal(await audience.locator('.slide').count(), 28);
+  assert.equal(await audience.locator('.slide').count(), 29);
   assert.equal(await audience.locator('.slide.is-active').getAttribute('data-slide'), '1');
-  assert.match(await audience.title(), /닿지 않는 돌봄/);
+  assert.match(await audience.title(), /돌봄이 필요한 곳|닿지 않는 돌봄/);
   await audience.keyboard.press('ArrowRight');
   assert.equal(await audience.locator('.slide.is-active').getAttribute('data-slide'), '2');
   assert.match(audience.url(), /slide=2/);
+  await audience.goto(`${rootUrl('presentation/index.html')}?slide=6`, { waitUntil: 'load' });
+  trace('audience slide 6 loaded');
+  assert.equal(await audience.locator('#demand-map svg path').count(), 44);
+  assert.equal(await audience.locator('#facility-map svg path').count(), 44);
   await audience.goto(`${rootUrl('presentation/index.html')}?slide=7`, { waitUntil: 'load' });
-  trace('audience slide 7 loaded');
-  assert.equal(await audience.locator('#single-map svg path').count(), 44);
-  assert.equal(await audience.locator('#distance-map svg path').count(), 44);
+  assert.equal(await audience.locator('#candidate-map svg path').count(), 44);
   await audience.goto(`${rootUrl('presentation/index.html')}?slide=9`, { waitUntil: 'load' });
-  assert.match(await audience.locator('.slide.is-active').innerText(), /여덟 곳이 그대로 다시 나왔습니다/);
+  assert.match(await audience.locator('.slide.is-active').innerText(), /\.931/);
+  assert.match(await audience.locator('.slide.is-active').innerText(), /후보 8곳 중 3곳|3\s*\/\s*8/);
+  assert.equal(await audience.locator('#dependence-chart').count(), 1);
+  assert.equal(await audience.locator('#ablation-chart').count(), 1);
+  await audience.goto(`${rootUrl('presentation/index.html')}?slide=10`, { waitUntil: 'load' });
+  assert.match(await audience.locator('.slide.is-active').innerText(), /127\s*\/\s*129/);
   await audience.goto(`${rootUrl('presentation/index.html')}?slide=11`, { waitUntil: 'load' });
-  trace('audience slide 11 loaded');
-  assert.match(await audience.locator('.slide.is-active').innerText(), /231개/);
-  assert.match(await audience.locator('.slide.is-active').innerText(), /확률이 아닙니다/);
+  assert.match(await audience.locator('.slide.is-active').innerText(), /594/);
+  assert.equal(await audience.locator('.welfare-numbers .zero strong').innerText(), '0');
+  await audience.goto(`${rootUrl('presentation/index.html')}?slide=12`, { waitUntil: 'load' });
+  assert.match(await audience.locator('.slide.is-active').innerText(), /효과가 아니라|효과예측이 아니라/);
+  await audience.goto(`${rootUrl('presentation/index.html')}?slide=13`, { waitUntil: 'load' });
+  assert.match(await audience.locator('.slide.is-active').innerText(), /4권역/);
   await assertNoHorizontalOverflow(audience, '관객 덱 1440px');
-  await audience.screenshot({ path: path.join(root, 'screenshots', '10_발표자료_경계감사_데스크톱.png'), fullPage: false });
+  await audience.screenshot({ path: path.join(root, 'screenshots', '18_피드백발표_데스크톱.png'), fullPage: false });
   trace('audience desktop screenshot saved');
 
   await audience.setViewportSize({ width: 390, height: 844 });
-  await audience.goto(`${rootUrl('presentation/index.html')}?slide=14`, { waitUntil: 'load' });
+  await audience.goto(`${rootUrl('presentation/index.html')}?slide=16`, { waitUntil: 'load' });
   await assertNoHorizontalOverflow(audience, '관객 덱 390px');
-  await audience.screenshot({ path: path.join(root, 'screenshots', '11_발표자료_MVP_모바일.png'), fullPage: false });
+  assert.match(await audience.locator('.slide.is-active').innerText(), /6단계/);
+  await audience.screenshot({ path: path.join(root, 'screenshots', '19_피드백발표_MVP_모바일.png'), fullPage: false });
   trace('audience mobile screenshot saved');
   assert.deepEqual(audienceErrors.page, []);
   assert.deepEqual(audienceErrors.console, []);
@@ -86,33 +97,33 @@ async function main() {
   await presenter.goto(`${rootUrl('presenter/index.html')}?slide=1`, { waitUntil: 'load' });
   trace('presenter slide 1 loaded');
   assert.match(await presenter.title(), /발표자 화면/);
-  assert.match(await presenter.locator('#slide-number').innerText(), /01 \/ 28/);
-  assert.equal(await presenter.locator('#slide-picker option').count(), 28);
+  assert.match(await presenter.locator('#slide-number').innerText(), /01 \/ 29/);
+  assert.equal(await presenter.locator('#slide-picker option').count(), 29);
   assert.match(await presenter.locator('#script-copy').innerText(), /안녕하세요, 팀 도달입니다/);
+  assert.match(await presenter.locator('#script-copy').innerText(), /확인한 공개자료/);
   assert.match(await presenter.locator('#slide-preview').getAttribute('src'), /presentation.*slide=1.*presenter=1/);
   const previewFrame = presenter.frameLocator('#slide-preview');
-  assert.equal(await previewFrame.locator('.slide').count(), 28);
+  assert.equal(await previewFrame.locator('.slide').count(), 29);
   assert.equal(await previewFrame.locator('.slide.is-active').getAttribute('data-slide'), '1');
-  await presenter.locator('#slide-picker').selectOption('15');
-  await previewFrame.locator('.slide.is-active[data-slide="15"]').waitFor();
-  assert.equal(await previewFrame.locator('.slide.is-active').getAttribute('data-slide'), '15');
-  trace('presenter iframe synchronized to slide 15');
-  assert.equal(await presenter.locator('#demo-steps li').count(), 4);
-  // 15번 시연 장은 110초(전환 20 + 실연 90) 배정 — 1:50
-  assert.match(await presenter.locator('#slide-duration').innerText(), /1:50/);
-  await presenter.locator('#next-button').click();
+  await presenter.locator('#slide-picker').selectOption('16');
   await previewFrame.locator('.slide.is-active[data-slide="16"]').waitFor();
-  await presenter.waitForTimeout(700);
-  assert.match(await presenter.locator('#slide-number').innerText(), /16 \/ 28/);
   assert.equal(await previewFrame.locator('.slide.is-active').getAttribute('data-slide'), '16');
+  trace('presenter iframe synchronized to slide 16');
+  assert.equal(await presenter.locator('#demo-steps li').count(), 6);
+  // 시연 장의 설명 25초와 실제 MVP 시연 110초는 별도 계상한다.
+  assert.match(await presenter.locator('#slide-duration').innerText(), /0:25/);
+  await presenter.locator('#next-button').click();
+  await previewFrame.locator('.slide.is-active[data-slide="17"]').waitFor();
+  await presenter.waitForTimeout(700);
+  assert.match(await presenter.locator('#slide-number').innerText(), /17 \/ 29/);
+  assert.equal(await previewFrame.locator('.slide.is-active').getAttribute('data-slide'), '17');
   // 시간은 대본 데이터에서 계산해 대조한다. 배분이 바뀌어도 검사가 따라간다.
   const expected = await presenter.evaluate(() => {
     const d = window.GOYANG_PRESENTER_SCRIPT;
-    const upTo = d.slides.filter((s) => s.id <= 16).reduce((a, s) => a + s.durationSeconds, 0);
+    const upTo = d.slides.filter((s) => s.id <= 17).reduce((a, s) => a + s.durationSeconds, 0);
     const fmt = (n) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
-    // 16번은 insertAfterSlide(15)를 지난 뒤라 전환 60초와 시연 110초가 이미 경과했다.
-    // 시연 110초는 15번 장 durationSeconds 로 이미 합계에 들어 있다. 전환만 더한다.
-    const past = d.metadata.transitionSeconds;
+    // 17번은 시연 장(16번)을 지난 뒤라 전환과 시연 시간이 모두 경과했다.
+    const past = d.metadata.transitionSeconds + d.metadata.demoSeconds;
     return { talk: fmt(upTo), event: fmt(upTo + past) };
   });
   assert.equal(await presenter.locator('#talk-elapsed').innerText(), expected.talk);
@@ -122,10 +133,10 @@ async function main() {
   trace('presenter desktop screenshot saved');
 
   await presenter.setViewportSize({ width: 390, height: 844 });
-  await presenter.goto(`${rootUrl('presenter/index.html')}?slide=15`, { waitUntil: 'load' });
+  await presenter.goto(`${rootUrl('presenter/index.html')}?slide=16`, { waitUntil: 'load' });
   await assertNoHorizontalOverflow(presenter, '발표자 화면 390px');
-  assert.equal(await presenter.locator('#demo-steps li').count(), 4);
-  await presenter.screenshot({ path: path.join(root, 'screenshots', '13_발표자화면_모바일.png'), fullPage: true });
+  assert.equal(await presenter.locator('#demo-steps li').count(), 6);
+  await presenter.screenshot({ path: path.join(root, 'screenshots', '21_피드백발표자_모바일.png'), fullPage: true });
   trace('presenter mobile screenshot saved');
   assert.deepEqual(presenterErrors.page, []);
   assert.deepEqual(presenterErrors.console, []);
@@ -135,10 +146,10 @@ async function main() {
   trace('browser closed');
   process.stdout.write(JSON.stringify({
     result: 'PASS',
-    audienceSlides: 28,
+    audienceSlides: 29,
     mapFeatures: 44,
-    presenterTalkSeconds: 635,
-    transitionSeconds: 60,
+    presenterTalkSeconds: 670,
+    transitionSeconds: 40,
     demoSeconds: 110,
     viewports: ['1440x900', '390x844'],
   }, null, 2));

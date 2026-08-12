@@ -465,6 +465,13 @@ kbd {
   border: 1px solid #a8ded9;
 }
 
+.run-buffer {
+  flex: 1.5;
+  color: var(--navy-700);
+  background: #f3f6fa;
+  border: 1px solid var(--line);
+}
+
 .notes-panel {
   position: relative;
   display: grid;
