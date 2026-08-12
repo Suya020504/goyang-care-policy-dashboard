@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const TEXT_EXTENSIONS = new Set(['.html', '.css', '.js', '.json', '.md', '.py', '.ps1', '.csv']);
@@ -25,6 +26,10 @@ function loadWindowData(filePath, globalName) {
   return JSON.parse(JSON.stringify(sandbox.window[globalName]));
 }
 
+function sha256(filePath) {
+  return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex').toUpperCase();
+}
+
 test('공개 저장소 텍스트에 사용자 절대경로·비밀값·개인 연락처가 없다', () => {
   const corpus = textFiles(ROOT)
     .map((filePath) => fs.readFileSync(filePath, 'utf8'))
@@ -45,6 +50,20 @@ test('HTML 실행 의존성이 저장소에 모두 존재한다', () => {
   refs.forEach((ref) => assert.ok(fs.existsSync(path.join(ROOT, ref)), `누락 파일: ${ref}`));
 });
 
+test('공개 복지 목적지 집계는 44동·594행이며 좌표 미확보를 명시한다', () => {
+  const welfare = loadWindowData(
+    path.join(ROOT, 'public', 'data', 'welfare_destinations.js'),
+    'DDOL_WELFARE_DESTINATIONS',
+  );
+  assert.equal(welfare.areaRows.length, 44);
+  assert.equal(welfare.areaRows.reduce((sum, row) => sum + row.seniorCenterCount, 0), 594);
+  assert.equal(welfare.metadata.currentWebDisplayedTotal, 593);
+  assert.equal(welfare.metadata.workbookRecordCount, 594);
+  assert.equal(welfare.metadata.coordinateCount, 0);
+  assert.equal(welfare.metadata.coordinateStatus, 'juso_confm_key_required');
+  assert.equal(welfare.areaRows.find((row) => row.dong === '관산동').seniorCenterCount, 16);
+});
+
 test('공개 GIS는 허용된 2026-04-01 경계와 출처표시를 사용한다', () => {
   const boundaries = loadWindowData(
     path.join(ROOT, 'public', 'data', 'boundaries.js'),
@@ -56,4 +75,18 @@ test('공개 GIS는 허용된 2026-04-01 경계와 출처표시를 사용한다'
   assert.match(boundaries.metadata.licenseStatus, /CC BY 4\.0/);
   assert.match(boundaries.metadata.licenseStatus, /공공누리 제1유형/);
   assert.equal(boundaries.metadata.displayOnly, false);
+});
+
+test('계보에 선언한 공개 산출물 SHA-256은 실제 파일과 같다', () => {
+  const lineage = fs.readFileSync(path.join(ROOT, 'reports', 'DATA_LINEAGE.md'), 'utf8');
+  const artifacts = [
+    ['data.js', path.join(ROOT, 'public', 'data', 'data.js')],
+    ['boundaries.js', path.join(ROOT, 'public', 'data', 'boundaries.js')],
+    ['pro_analysis.js', path.join(ROOT, 'public', 'data', 'pro_analysis.js')],
+  ];
+  artifacts.forEach(([name, filePath]) => {
+    const match = lineage.match(new RegExp(`${name.replace('.', '\\\.')}[^\\n]*?\\x60([A-F0-9]{64})\\x60`));
+    assert.ok(match, `${name} 계보 해시가 없습니다.`);
+    assert.equal(match[1], sha256(filePath), `${name} 계보 해시가 실제 파일과 다릅니다.`);
+  });
 });

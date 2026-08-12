@@ -4,6 +4,7 @@
   const DATA = window.DDOL_V2_DATA;
   const BOUNDARIES = window.DDOL_V2_BOUNDARIES;
   const PRO = window.DDOL_PRO_ANALYSIS || null;
+  const WELFARE = window.DDOL_WELFARE_DESTINATIONS || null;
   const CHARTS = window.DdolCharts;
   const ENGINE = window.PolicyEngine;
   const GUIDED = window.DDOL_GUIDED_MODEL;
@@ -78,8 +79,17 @@
       title: '고양 똑버스 안내',
       date: '2025-12-15 수정',
       url: 'https://www.goyang.go.kr/www/www03/www03_5/www03_5_4/www03_5_4_tab7.jsp',
-      definition: '공식 서비스 범위는 식사·고봉·덕은·향동 4개 권역, 14대입니다. 행정동 3곳은 팀 매핑입니다.',
+      definition: '공식 서비스 범위는 식사·고봉·덕은·향동 4개 운영권역입니다. 운영권역은 행정동과 같은 단위가 아닙니다.',
       status: '공식 확인',
+    },
+    {
+      id: 'SRC-GTRANS-DDOKBUS-20260813',
+      org: '경기교통공사',
+      title: '똑버스 운영현황',
+      date: '2026-08-13 확인',
+      url: 'https://www.gtrans.or.kr/web/lay1/program/S1T499C698/ddock_bus/list.do',
+      definition: '공개 운영현황에서 고양 4개 권역의 차량을 식사 4·고봉 3·덕은 3·향동 4대로 확인했습니다. 합계 14대는 이 확인일의 시점값입니다.',
+      status: '공식 목록 확인',
     },
     {
       id: 'population',
@@ -148,6 +158,7 @@
   ];
 
   const city = DATA.city || {};
+  const welfareByDong = new Map((WELFARE?.areaRows || []).map((row) => [row.dong, numberValue(row.seniorCenterCount)]));
   const allAreas = (DATA.areas || []).map(normalizeArea);
   const areaByCode = new Map(allAreas.map((item) => [String(item.code), item]));
   const comparisonsByDong = new Map((DATA.candidateComparisons || []).map((item) => [
@@ -215,6 +226,9 @@
       routeMentions: numberValue(pick(item, 'routeMentions', 'route_mentions')),
       nearestFacilityM: numberValue(pick(item, 'nearestFacilityM', 'nearest_facility_mean_m')),
       facilityP90M: numberValue(pick(item, 'facilityP90M', 'facility_p90_m')),
+      seniorCenterCount: welfareByDong.has(pick(item, 'dong', 'dongName', 'dong_name'))
+        ? welfareByDong.get(pick(item, 'dong', 'dongName', 'dong_name'))
+        : null,
       currentDrt: Boolean(pick(item, 'currentDrt', 'current_drt_flag')),
       candidate: Boolean(pick(item, 'candidate', 'candidateTop8', 'candidate_top8')),
     };
@@ -367,7 +381,7 @@
     const selected = candidateByCode.get(String(requestedCode)) || candidateByDong.get(requestedCode) || selectedDefault;
     const requestedMapCode = String(stored.mapAreaCode || selected.code);
     const mapArea = areaByCode.get(requestedMapCode) || areaByCode.get(String(selected.code)) || allAreas[0];
-    const mapMetric = ['agingRate', 'single70', 'demandIndex', 'routesPerStop', 'nearestFacilityM', 'currentDrt', 'candidate'].includes(stored.mapMetric)
+    const mapMetric = ['agingRate', 'single70', 'demandIndex', 'routesPerStop', 'nearestFacilityM', 'seniorCenterCount', 'currentDrt', 'candidate'].includes(stored.mapMetric)
       ? stored.mapMetric
       : 'agingRate';
     const mapDistrict = ['전체', '고양시 덕양구', '고양시 일산동구', '고양시 일산서구'].includes(stored.mapDistrict)
@@ -540,7 +554,7 @@
   }
 
   function buildGuidedModel() {
-    const model = GUIDED.buildAreaModel(DATA, PRO, state.selectedCode);
+    const model = GUIDED.buildAreaModel(DATA, PRO, state.selectedCode, WELFARE);
     const signalMetrics = model.signals.map((signal) => ({
       ...signal,
       areaDisplay: signal.id === 'nearest-facility' ? km(signal.value) : signal.display,
@@ -820,15 +834,19 @@
     const area = state.mapDistrict === '전체' || requestedArea.district === state.mapDistrict
       ? requestedArea
       : allAreas.find((item) => item.district === state.mapDistrict) || requestedArea;
+    const effectiveMapMetric = state.mapMetric === 'seniorCenterCount' && !WELFARE
+      ? 'agingRate'
+      : state.mapMetric;
     const metrics = [
       ['agingRate', '고령화율'],
       ['single70', '70+ 1인세대'],
       ['demandIndex', '고령수요'],
       ['routesPerStop', '경유노선'],
       ['nearestFacilityM', '의료거리'],
-      ['currentDrt', '현행 DRT'],
+      ['seniorCenterCount', '경로당 수'],
+      ['currentDrt', '과거 팀 대리매핑'],
       ['candidate', '후보 8개'],
-    ];
+    ].filter(([key]) => key !== 'seniorCenterCount' || WELFARE);
     const districts = [
       ['전체', '고양시 전체'],
       ['고양시 덕양구', '덕양구'],
@@ -836,7 +854,17 @@
       ['고양시 일산서구', '일산서구'],
     ];
     const candidate = candidateByCode.get(String(area.code));
-    const mapStatus = candidate ? '우선검토 후보' : area.currentDrt ? '현행 DRT 비교 행정동' : '44개 행정동 비교 대상';
+    const mapStatus = candidate ? '우선검토 후보' : area.currentDrt ? '과거 팀 사후 대리매핑 행정동' : '44개 행정동 비교 대상';
+    const activeMetric = {
+      agingRate: ['고령화율', percent(area.agingRate)],
+      single70: ['70세 이상 1인세대', `${number(area.single70)}세대`],
+      demandIndex: ['고령수요 대리지수', area.demandIndex.toFixed(2)],
+      routesPerStop: ['정류장당 경유노선', `${area.routesPerStop.toFixed(2)}개`],
+      nearestFacilityM: ['의료시설 평균 최근접거리', `${(area.nearestFacilityM / 1000).toFixed(2)}km`],
+      seniorCenterCount: ['공식 Excel 경로당 수', `${number(area.seniorCenterCount)}곳`],
+      currentDrt: ['과거 팀 사후 대리매핑', area.currentDrt ? '포함' : '미포함'],
+      candidate: ['후보 8개 집합', area.candidate ? '후보' : '비후보'],
+    }[effectiveMapMetric] || ['고령화율', percent(area.agingRate)];
     return `
       <article class="card gis-card">
         <div class="card-head gis-card-head"><div><span class="eyebrow">행정 GIS 관제</span><h2>고양시 44개 행정동 공급·수요 지도</h2><p>실제 행정동 경계에 제출 분석의 지표와 익명 공급점을 겹쳐 봅니다.</p></div><span class="badge proxy">오프라인 GIS</span></div>
@@ -845,25 +873,25 @@
           <div><strong>8</strong><span>검토후보</span></div>
           <div><strong>2,095</strong><span>경계 안 정류장</span></div>
           <div><strong>1,892</strong><span>경계 안 표시점</span></div>
-          <div><strong>4→3</strong><span>운영권역→분석동</span></div>
+          <div><strong>4</strong><span>공식 운영권역 · 행정동과 별도</span></div>
         </div>
         <div class="map-toolbar">
           <div class="map-toolbar-row"><strong>행정구역</strong><div class="map-control-scroll" role="group" aria-label="행정구역 필터">
             ${districts.map(([key, label]) => `<button class="filter-chip ${state.mapDistrict === key ? 'is-active' : ''}" data-map-district="${esc(key)}">${esc(label)}</button>`).join('')}
           </div></div>
           <div class="map-toolbar-row"><strong>색상 지표</strong><div class="map-control-scroll" role="group" aria-label="지도 표시 지표">
-            ${metrics.map(([key, label]) => `<button class="filter-chip ${state.mapMetric === key ? 'is-active' : ''}" data-map-metric="${key}">${esc(label)}</button>`).join('')}
+            ${metrics.map(([key, label]) => `<button class="filter-chip ${effectiveMapMetric === key ? 'is-active' : ''}" data-map-metric="${key}">${esc(label)}</button>`).join('')}
           </div></div>
           <div class="map-toolbar-row"><strong>공급점</strong><div class="map-control-scroll" role="group" aria-label="지도 공급점 레이어">
             <button class="layer-toggle ${state.mapBusPoints ? 'is-active' : ''}" data-map-layer="bus" aria-pressed="${state.mapBusPoints}"><i class="bus"></i>정류장 2,095</button>
             <button class="layer-toggle ${state.mapFacilityPoints ? 'is-active' : ''}" data-map-layer="facility" aria-pressed="${state.mapFacilityPoints}"><i class="medical"></i>경계 안 의료점 1,892</button>
           </div></div>
-          <small class="map-toolbar-asof">기준일 · 버스 2025-08-25 · 행정동 경계 2026-04-01 · 인구·시설 2026-06-30</small>
+          <small class="map-toolbar-asof">기준일 · 버스 2025-08-25 · 행정동 경계 2026-04-01 · 인구·의료 2026-06-30 · 경로당 Excel 2026-06</small>
         </div>
         <div class="gis-layout">
           <div class="gis-map-panel">
             ${CHARTS.administrativeMap(BOUNDARIES, allAreas, area.code, {
-              metric: state.mapMetric,
+              metric: effectiveMapMetric,
               district: state.mapDistrict,
               showBus: state.mapBusPoints,
               showFacilities: state.mapFacilityPoints,
@@ -872,6 +900,7 @@
           <aside class="map-inspector" aria-live="polite">
             <div><span class="badge ${candidate ? 'reproduced' : 'proxy'}">${esc(mapStatus)}</span><small>${esc(area.district.replace('고양시', ''))}</small><h3>${esc(area.dong)}</h3></div>
             <div class="map-base-stats"><span><small>인구</small><b>${number(area.population)}</b></span><span><small>65세 이상</small><b>${number(area.elderly65)}</b></span><span><small>정류장</small><b>${number(area.stops)}</b></span></div>
+            <div class="map-active-metric"><span>${esc(activeMetric[0])}</span><strong>${esc(activeMetric[1])}</strong><small>${effectiveMapMetric === 'seniorCenterCount' ? '시설 수이며 좌표 접근성은 아직 계산하지 않음' : '현재 지도 색상 지표'}</small></div>
             ${renderMapBenchmarkBands(area)}
             ${candidate ? `<button class="primary-button compact" data-open-candidate="${esc(area.code)}">이 후보 상세 비교 →</button>` : '<p class="map-inspector-note">후보 8개 밖의 동도 비교 기준선과 공간적 위치를 함께 확인할 수 있습니다.</p>'}
             <div class="map-validation-brief">
@@ -1165,9 +1194,9 @@
             <div class="stat-callout"><strong>유의 HH ${significantHH.length}곳</strong><span>${significantHH.map((item) => `${esc(pick(item, 'dong', 'dongName', 'dong_name'))} q=${numberValue(pick(item, 'qFdr', 'q_fdr')).toFixed(4)}`).join(' · ') || '관산동 q=0.0403'}만 고고(HH) 군집입니다. LL 유의지역과 구분합니다.</span></div>
           </article>
           <article class="card">
-            <div class="card-head"><div><h2>단일지표 vs 결합 대리모형</h2><p>현행 3개 행정동 포착과 포스터 후보집합 일치도를 별도 표시</p></div><span class="badge proxy">사후 비교</span></div>
+            <div class="card-head"><div><h2>단일지표 vs 결합 대리모형</h2><p>과거 팀 사후 대리매핑 3동과 포스터 후보집합의 탐색적 중첩을 별도 표시</p></div><span class="badge proxy">사후 비교</span></div>
             <div class="model-list">${CHARTS.modelBars(modelComparison)}</div>
-            <div class="chart-note"><strong>주의:</strong> 현행 권역 선정 뒤의 데이터로 비교한 결과이며 예측 정확도나 정책효과가 아닙니다.</div>
+            <div class="chart-note"><strong>주의:</strong> 공식 운영권역 GIS가 아닌 과거 팀의 사후 대리매핑과 비교한 결과이며 예측 정확도나 정책효과가 아닙니다.</div>
           </article>
           <article class="card wide">
             <div class="card-head"><div><h2>29개 주장 판정 원장</h2><p>포스터 값 → 재현 값 → 판정 → 근거 수준을 한 줄씩 확인</p></div><span class="badge team">감사 추적</span></div>
@@ -1189,6 +1218,34 @@
       </div>`).join('');
   }
 
+  function renderAccessibilityTimeRanges(analysis) {
+    const rows = analysis?.candidateRangeRows || [];
+    if (!rows.length) return '<p>이동시간 가정 시나리오를 불러오지 못했습니다.</p>';
+    const maximum = Math.max(...rows.flatMap((row) => [
+      numberValue(row.referenceMedianMinutes),
+      numberValue(row.scenarioMedianMinutesHigh),
+    ]), 1);
+    const selected = selectedArea();
+    return `
+      <div class="access-time-range-legend" aria-label="이동시간 범례"><span class="is-reference">보행 대리 중앙값</span><span class="is-range">대기 5·10·15분 가정 범위</span></div>
+      <div class="access-time-range-chart" role="list" aria-label="후보 8개 이동시간 가정 범위">
+        ${rows.map((row) => {
+          const reference = numberValue(row.referenceMedianMinutes);
+          const low = numberValue(row.scenarioMedianMinutesLow);
+          const high = numberValue(row.scenarioMedianMinutesHigh);
+          return `<div class="access-time-range-row ${row.code === selected.code ? 'is-selected' : ''}" role="listitem">
+            <strong>${esc(row.dong)}</strong>
+            <div class="access-time-range-track" aria-label="${esc(row.dong)} 보행 대리 ${reference.toFixed(1)}분, 가정 범위 ${low.toFixed(1)}분에서 ${high.toFixed(1)}분">
+              <span style="--left:${(low / maximum) * 100}%;--width:${Math.max(1, ((high - low) / maximum) * 100)}%"></span>
+              <i style="--left:${(reference / maximum) * 100}%"></i>
+            </div>
+            <b>${reference.toFixed(1)} → ${low.toFixed(1)}~${high.toFixed(1)}분</b>
+            <small>손익분기 대기 ${numberValue(row.breakEvenWaitMedianMinutes).toFixed(1)}분</small>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+
   function renderProfessionalAnalysis() {
     if (!PRO) return '';
     const weights = PRO.weightSensitivity || {};
@@ -1197,6 +1254,7 @@
     const spatial = PRO.spatialWeights || [];
     const overlap = PRO.overlapNull || {};
     const construct = PRO.constructSensitivity || {};
+    const accessibilityTime = PRO.accessibilityTimeScenarios || {};
     const scenarioCount = numberValue(weights.scenarioCount, 45);
     const stableDongs = weights.stableDongs || [];
     const conditionalDongs = weights.conditionalDongs || [];
@@ -1220,11 +1278,11 @@
           <div><span>가중치 조합</span><strong>${scenarioCount}<small>개</small></strong><small>제약 범위 안 전수 조합</small></div>
           <div><span>최저 후보집합 Jaccard</span><strong>${numberValue(weights.minJaccard).toFixed(3)}</strong><small>기준 8곳과의 집합 겹침</small></div>
           <div><span>후보 15분 면적격자</span><strong>${percent(coverage15Candidate)}</strong><small>비후보 중앙값 ${percent(coverage15Other)}</small></div>
-          <div><span>현행 3동 겹침 귀무확률</span><strong>${percent(overlapP)}</strong><small>무작위 3곳에서 1곳 이상</small></div>
+          <div><span>과거 팀 3동 겹침 참고치</span><strong>${percent(overlapP)}</strong><small>정책 재현율 아님</small></div>
         </div>
         <div class="pro-analysis-grid">
           <article class="card pro-weight-card wide">
-            <div class="card-head"><div><h3>${scenarioCount}개 가중치 조합 포함 횟수</h3><p>44동 표준화 후 현행 비교 3동을 제외한 41동에서 상위 8 선택 · CAG 0.30~0.70 · 버스 0.15~0.50 · 시설 0.10~0.40</p></div><span class="badge pending">지정 범위 · 확률 아님</span></div>
+            <div class="card-head"><div><h3>${scenarioCount}개 가중치 조합 포함 횟수</h3><p>44동 표준화 후 과거 팀 사후 대리매핑 3동을 제외한 41동에서 상위 8 선택 · CAG 0.30~0.70 · 버스 0.15~0.50 · 시설 0.10~0.40</p></div><span class="badge pending">지정 범위 · 확률 아님</span></div>
             <div class="chart-body">${CHARTS.weightStability(weights.inclusionRows || [], scenarioCount)}</div>
             <p class="pro-chart-scope">기준 후보 8곳과 한 번 이상 대안에 등장한 3곳만 표시합니다. 나머지 33개 동은 45개 조합 모두에서 상위 8에 포함되지 않았습니다.</p>
             <div class="pro-finding-row">
@@ -1250,16 +1308,21 @@
             <div class="chart-body">${CHARTS.facilityCoverage(coverage)}</div>
             <div class="stat-callout"><strong>15분 ${percent(coverage15Candidate)}</strong><span>후보 8곳의 면적격자 중앙값입니다. 후보식에 같은 의료거리 변수가 포함돼 독립 검증이 아닌 해석용 단위변환이며, 개인·인구의 도달률이 아닙니다.</span></div>
           </article>
+          <article class="card access-time-scenario-card wide">
+            <div class="card-head"><div><h3>대기시간 가정에 따른 중앙 일반화시간</h3><p>보행 대리 vs 접근·승하차 5분 + 대기 5·10·15분 + 거리계수 1.3 + 차내 15km/h</p></div><span class="badge corrected">가정 시나리오 · 효과 아님</span></div>
+            <div class="chart-body">${renderAccessibilityTimeRanges(accessibilityTime)}</div>
+            <div class="stat-callout"><strong>실제 대기시간이 판정을 바꿉니다.</strong><span>관산동은 보행 대리 16.2분에서 가정 범위 14.1~24.1분입니다. 실제 OD·대기·승하차·도착 로그를 받기 전에는 DRT 전후효과나 수혜자 비율로 해석하지 않습니다.</span></div>
+          </article>
           <article class="card">
             <div class="card-head"><div><h3>공간가중치 명세 민감도</h3><p>Queen · 최근접 4개 · 최근접 6개 이웃 비교</p></div><span class="badge corrected">국지결론 변동</span></div>
             <div class="chart-body">${CHARTS.spatialWeightComparison(spatial)}</div>
             <div class="stat-callout"><strong>전역 양의 군집 유지</strong><span>전역 Moran I의 방향은 같아도 FDR 유의 HH 지역은 이웃 정의에 따라 달라집니다. 관산동을 확정 군집으로 단정하지 않습니다.</span></div>
           </article>
           <article class="card">
-            <div class="card-head"><div><h3>현행 3동 포착의 정확 귀무분포</h3><p>가중치 진단의 41동 선정집합과 달리, 여기서는 전체 44동에서 3곳을 무작위 선택</p></div><span class="badge pending">모집단 44 · 약한 검증</span></div>
+            <div class="card-head"><div><h3>과거 팀 대리매핑 3동의 귀무분포</h3><p>공식 4개 운영권역의 GIS 교차가 아니라, 과거 팀이 사후 매핑한 화전·식사·고봉 3동을 대상으로 한 참고치</p></div><span class="badge pending">정책 검증 아님</span></div>
             <div class="chart-body">${CHARTS.overlapNull(overlap)}</div>
-            <div class="pro-set-detail"><span><b>기준 DSS top3</b>${esc(overlapTop3.join(' · '))}</span><span><b>현행 팀매핑 3동</b>${esc(currentDrtDongs.join(' · '))}</span><span><b>겹침</b>${esc(overlapDongs.join(' · ') || '없음')}</span></div>
-            <div class="stat-callout"><strong>P(1곳 이상)=${percent(overlapP)}</strong><span>관측 겹침 1곳은 우연히도 나올 수 있어 현행권역 선정 타당성의 강한 증거가 아닙니다.</span></div>
+            <div class="pro-set-detail"><span><b>기준 DSS top3</b>${esc(overlapTop3.join(' · '))}</span><span><b>과거 팀 사후 대리매핑 3동</b>${esc(currentDrtDongs.join(' · '))}</span><span><b>겹침</b>${esc(overlapDongs.join(' · ') || '없음')}</span></div>
+            <div class="stat-callout"><strong>P(1곳 이상)=${percent(overlapP)}</strong><span>공식 현황은 식사·고봉·덕은·향동 4개 운영권역입니다. 권역은 행정동과 같지 않고 덕은은 대덕·화전에 걸쳐 있어, 이 값은 정책 재현율이나 효과 검증에 사용할 수 없습니다.</span></div>
           </article>
           <article class="card">
             <div class="card-head"><div><h3>구성개념·시설 명세 교차점검</h3><p>수요 정의와 시설 범위를 바꿨을 때 후보집합 변화</p></div><span class="badge team">대리지표 점검</span></div>

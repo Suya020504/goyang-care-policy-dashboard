@@ -258,7 +258,48 @@
     });
   }
 
-  function buildAreaModel(data, pro, code = DEFAULT_DONG_CODE) {
+  function accessibilityScenarioSnapshot(pro, area) {
+    const analysis = pro.accessibilityTimeScenarios || {};
+    const row = findByCodeOrDong(analysis.candidateRangeRows, area);
+    if (!row) return null;
+    return Object.freeze({
+      status: analysis.effectStatus || 'assumption_only',
+      referenceMedianMinutes: finite(row.referenceMedianMinutes),
+      scenarioMedianMinutesLow: finite(row.scenarioMedianMinutesLow),
+      scenarioMedianMinutesHigh: finite(row.scenarioMedianMinutesHigh),
+      medianTimeChangeMinutesLow: finite(row.medianTimeChangeMinutesLow),
+      medianTimeChangeMinutesHigh: finite(row.medianTimeChangeMinutesHigh),
+      referenceCoverage30: finite(row.referenceCoverage30),
+      scenarioCoverage30Low: finite(row.scenarioCoverage30Low),
+      scenarioCoverage30High: finite(row.scenarioCoverage30High),
+      coverage30ChangePercentagePointsLow: finite(row.coverage30ChangePercentagePointsLow),
+      coverage30ChangePercentagePointsHigh: finite(row.coverage30ChangePercentagePointsHigh),
+      breakEvenWaitMedianMinutes: finite(row.breakEvenWaitMedianMinutes),
+      waitScenarioMinutes: Object.freeze([...(analysis.waitScenarioMinutes || [])]),
+      assumptions: Object.freeze({ ...(analysis.assumptions || {}) }),
+      unit: analysis.unit || null,
+      formula: analysis.formula || null,
+      interpretation: '공개 가정에 따른 면적격자 시나리오입니다. 실제 DRT 효과나 대상자 수혜율이 아닙니다.',
+    });
+  }
+
+  function welfareDestinationSnapshot(welfare, area) {
+    const metadata = welfare?.metadata || {};
+    const row = findByDong(welfare?.areaRows, area.dong);
+    if (!row) return null;
+    return Object.freeze({
+      selectedDongCount: finite(row.seniorCenterCount),
+      currentWebDisplayedTotal: finite(metadata.currentWebDisplayedTotal),
+      workbookRecordCount: finite(metadata.workbookRecordCount),
+      workbookInternalReference: metadata.workbookInternalReference || null,
+      seniorWelfareCenterCount: finite(metadata.seniorWelfareCenterCount),
+      coordinateCount: finite(metadata.coordinateCount),
+      coordinateStatus: metadata.coordinateStatus || null,
+      interpretation: metadata.interpretation || '목록만 확보했으며 접근성은 계산하지 않았습니다.',
+    });
+  }
+
+  function buildAreaModel(data, pro, code = DEFAULT_DONG_CODE, welfare = {}) {
     if (!data || !pro) throw new TypeError('안내형 모델에는 DATA와 PRO가 모두 필요합니다.');
 
     const { candidates, selected, usedFallback } = findCandidate(data, code);
@@ -272,6 +313,8 @@
     const boundaryRow = findByCodeOrDong(boundaryAudit.inclusionRows, selected);
     const feedbackAudit = dssFeedbackAudit(pro, selected);
     const villageSnapshot = villageBusSnapshot(pro, selected);
+    const accessibilityScenario = accessibilityScenarioSnapshot(pro, selected);
+    const welfareSnapshot = welfareDestinationSnapshot(welfare, selected);
 
     const baselineDongs = Array.isArray(baseline.candidateDongs) ? baseline.candidateDongs : [];
     const candidateDongs = candidates.map((area) => area.dong);
@@ -433,6 +476,32 @@
         }),
       ]),
       villageBusSnapshot: villageSnapshot,
+      accessibilityScenario,
+      welfareDestinationSnapshot: welfareSnapshot,
+      dataAcquisition: Object.freeze([
+        Object.freeze({
+          status: '확보',
+          label: '정류장과 정적 경유노선',
+          detail: '2025-08-25 정류장 CSV를 분석에 사용했습니다.',
+        }),
+        Object.freeze({
+          status: '목록 확보',
+          label: '경로당·노인종합복지관 목적지 후보',
+          detail: welfareSnapshot
+            ? `공식 Excel ${welfareSnapshot.workbookRecordCount}행과 복지관 ${welfareSnapshot.seniorWelfareCenterCount}곳을 확인했습니다. ${selected.dong} 경로당은 ${welfareSnapshot.selectedDongCount}곳이며 좌표 접근성은 대기 중입니다.`
+            : '공식 목록의 비식별 집계를 연결해야 합니다.',
+        }),
+        Object.freeze({
+          status: 'API 필요',
+          label: '노선 운행정보와 복지목적지 좌표',
+          detail: '경기도 버스·TAGO로 순서·배차·형상을, 별도 Juso 승인키로 목적지 좌표를 수집해야 합니다.',
+        }),
+        Object.freeze({
+          status: '기관 협조',
+          label: '실제 대상자·62개 서비스·OD·대기·비용',
+          detail: '비식별 집계와 운영 로그가 확보돼야 관측 효과를 검증할 수 있습니다.',
+        }),
+      ]),
       dataBoundary: Object.freeze({
         excludes: Object.freeze(['개인정보', '실제 출발지·목적지 자료', '자동 정책추천']),
         interpretation: '공개데이터 대리신호만으로 정책을 확정하지 않고 담당자가 현장을 확인합니다.',
@@ -489,6 +558,25 @@
           uniqueRouteNames: model.villageBusSnapshot.uniqueRouteCount,
           limitation: model.villageBusSnapshot.interpretation,
         } : null,
+        accessibilityScenario: model.accessibilityScenario ? {
+          status: model.accessibilityScenario.status,
+          referenceMedianMinutes: model.accessibilityScenario.referenceMedianMinutes,
+          scenarioMedianMinutesLow: model.accessibilityScenario.scenarioMedianMinutesLow,
+          scenarioMedianMinutesHigh: model.accessibilityScenario.scenarioMedianMinutesHigh,
+          referenceCoverage30: model.accessibilityScenario.referenceCoverage30,
+          scenarioCoverage30Low: model.accessibilityScenario.scenarioCoverage30Low,
+          scenarioCoverage30High: model.accessibilityScenario.scenarioCoverage30High,
+          breakEvenWaitMedianMinutes: model.accessibilityScenario.breakEvenWaitMedianMinutes,
+          limitation: model.accessibilityScenario.interpretation,
+        } : null,
+        welfareDestination: model.welfareDestinationSnapshot ? {
+          selectedDongCount: model.welfareDestinationSnapshot.selectedDongCount,
+          currentWebDisplayedTotal: model.welfareDestinationSnapshot.currentWebDisplayedTotal,
+          workbookRecordCount: model.welfareDestinationSnapshot.workbookRecordCount,
+          seniorWelfareCenterCount: model.welfareDestinationSnapshot.seniorWelfareCenterCount,
+          coordinateCount: model.welfareDestinationSnapshot.coordinateCount,
+          limitation: model.welfareDestinationSnapshot.interpretation,
+        } : null,
         inclusionIsProbability: false,
       },
       fieldChecks: CHECKLIST_ITEMS.map((item) => ({
@@ -516,6 +604,7 @@
       limitations: [
         '공개데이터 대리진단이며 정책 도입 우선순위나 효과를 확정하지 않습니다.',
         '마을버스 정적 노선 표기는 배차·운행량·방향·목적지·실제 서비스 중복을 증명하지 않습니다.',
+        '이동시간 범위는 공개 가정에 따른 면적격자 시나리오이며 실제 DRT 효과나 대상자 수혜율이 아닙니다.',
         '실제 대상자 자료는 승인된 내부 환경에서 비식별 집계 후 별도 검증해야 합니다.',
       ],
     };

@@ -68,6 +68,11 @@ async function main() {
   assert.equal(await page.locator('.map-category-scale').count(), 1);
   await page.locator('[data-map-metric="nearestFacilityM"]').click();
   assert.match(await page.locator('.map-legend').innerText(), /의료시설 평균 최근접거리/);
+  await page.locator('[data-map-metric="seniorCenterCount"]').click();
+  assert.match(await page.locator('.map-legend').innerText(), /공식 Excel 경로당 수/);
+  assert.match(await page.locator('.map-legend').innerText(), /접근성 아님/);
+  await page.locator('[data-map-code="4128160000"]').click();
+  assert.match(await page.locator('.map-inspector').innerText(), /16곳/);
   await page.locator('[data-map-code="4128167000"]').click();
   assert.equal(await page.locator('.map-inspector h3').innerText(), '대덕동');
   await page.locator('[data-map-code="4128163000"]').click();
@@ -128,8 +133,15 @@ async function main() {
   assert.match(professionalText, /전 조합 유지[\s\S]*1곳[\s\S]*고양동/);
   assert.match(professionalText, /최저 Jaccard[\s\S]*0\.333/);
   assert.match(professionalText, /실제 정책 가중치 범위나 선정확률이 아닙니다/);
+  assert.equal(await page.locator('.access-time-range-row').count(), 8);
+  assert.match(professionalText, /대기시간 가정에 따른 중앙 일반화시간/);
+  assert.match(professionalText, /관산동은 보행 대리 16\.2분에서 가정 범위 14\.1~24\.1분/);
+  assert.match(professionalText, /가정 시나리오.*효과 아님/);
   assert.match(professionalText, /기준 DSS top3[\s\S]*가좌동 · 효자동 · 고봉동/);
-  assert.match(professionalText, /현행 팀매핑 3동[\s\S]*고봉동 · 식사동 · 화전동/);
+  assert.match(professionalText, /과거 팀 사후 대리매핑 3동[\s\S]*고봉동 · 식사동 · 화전동/);
+  assert.doesNotMatch(professionalText, /현행 3개 행정동|현행 권역 선정 뒤/);
+  assert.match(professionalText, /식사·고봉·덕은·향동 4개 운영권역/);
+  assert.match(professionalText, /정책 재현율이나 효과 검증에 사용할 수 없습니다/);
   assert.match(professionalText, /겹침[\s\S]*고봉동/);
   assert.equal(await page.locator('.pro-weight-chart title').count(), 11);
   assert.equal(await page.locator('.spatial-weight-row').count(), 3);

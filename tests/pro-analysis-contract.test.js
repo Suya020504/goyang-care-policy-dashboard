@@ -17,15 +17,42 @@ function loadAnalysis() {
 const analysis = loadAnalysis();
 
 test('피드백 대응 전문분석 계약과 기준일을 공개 산출물에 보존한다', () => {
-  assert.equal(analysis.metadata.schemaVersion, '1.1.0');
-  assert.equal(analysis.metadata.generatedAt, '2026-08-12');
+  assert.equal(analysis.metadata.schemaVersion, '1.2.0');
+  assert.equal(analysis.metadata.generatedAt, '2026-08-13');
   assert.deepEqual(Object.keys(analysis), [
     'metadata', 'baseline', 'weightSensitivity', 'facilityCoverage', 'spatialWeights',
     'overlapNull', 'constructSensitivity', 'dssComponentDependence', 'dssAblation',
-    'villageBusScreening', 'focusComparison',
+    'villageBusScreening', 'focusComparison', 'accessibilityTimeScenarios',
   ]);
   assert.equal(analysis.metadata.inputManifest.length, 8);
   assert.equal(analysis.metadata.sourceDates.busStops, '2025-08-25');
+});
+
+test('의료시설 이동시간 범위는 실제 전후효과와 분리된 3개 가정으로 공개한다', () => {
+  const access = analysis.accessibilityTimeScenarios;
+  assert.equal(access.effectStatus, 'hypothetical_scenario_not_observed_before_after');
+  assert.deepEqual(access.waitScenarioMinutes, [5, 10, 15]);
+  assert.deepEqual(access.coverageThresholdMinutes, [30, 45]);
+  assert.equal(access.assumptions.fixedAccessEgressMinutes, 5);
+  assert.equal(access.assumptions.networkDistanceFactor, 1.3);
+  assert.equal(access.assumptions.inVehicleSpeedKmh, 15);
+  assert.equal(access.assumptions.assumedTransfers, 0);
+  assert.equal(access.candidateRows.length, 24);
+  assert.equal(access.candidateRangeRows.length, 8);
+  assert.equal(access.dataQuality.requiredFieldMissingCount, 0);
+  assert.equal(access.dataQuality.duplicateGridCoordinateCount, 0);
+  assert.equal(access.dataQuality.negativeDistanceCount, 0);
+  assert.match(access.limitation, /실제 도입 전후·인과효과·예측값이 아니라/);
+  assert.match(access.limitation, /62개 돌봄서비스 목적지가 아니고/);
+
+  const gwansan = access.candidateRangeRows.find((row) => row.dong === '관산동');
+  assert.ok(gwansan);
+  assert.ok(Math.abs(gwansan.referenceCoverage30 - 0.8849230769230769) < 1e-12);
+  assert.ok(Math.abs(gwansan.scenarioCoverage30Low - 0.9956923076923077) < 1e-12);
+  assert.equal(gwansan.scenarioCoverage30High, 1);
+  assert.ok(gwansan.medianTimeChangeMinutesLow < 0);
+  assert.ok(gwansan.medianTimeChangeMinutesHigh > 0);
+  assert.ok(Math.abs(gwansan.breakEvenWaitMedianMinutes - 7.182154521777173) < 1e-12);
 });
 
 test('DSS 중복성과 구성요소 제거 민감도를 정확히 공개한다', () => {
@@ -67,12 +94,16 @@ test('마을버스 정적 스크리닝과 관산·행주·대화 비교를 과�
   assert.equal(rows.대화동.globalRank, 38);
 });
 
-test('전문분석 CSV 18개와 SVG 2개가 함께 배포된다', () => {
+test('전문분석 CSV 22개와 SVG 3개가 함께 배포된다', () => {
   const tableDir = path.join(ROOT, 'outputs', 'tables', 'pro_analysis');
   const figureDir = path.join(ROOT, 'outputs', 'figures', 'pro_analysis');
-  assert.equal(fs.readdirSync(tableDir).filter((name) => name.endsWith('.csv')).length, 18);
+  assert.equal(fs.readdirSync(tableDir).filter((name) => name.endsWith('.csv')).length, 22);
   assert.deepEqual(
     fs.readdirSync(figureDir).filter((name) => name.endsWith('.svg')).sort(),
-    ['01_dss_ablation_top8.svg', '02_focus_area_village_bus.svg'],
+    [
+      '01_dss_ablation_top8.svg',
+      '02_focus_area_village_bus.svg',
+      '03_access_time_scenario.svg',
+    ],
   );
 });

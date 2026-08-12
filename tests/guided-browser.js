@@ -39,6 +39,7 @@ async function goNext(page) {
 }
 
 async function main() {
+  const root = path.resolve(__dirname, '..');
   const browser = await chromium.launch({
     headless: true,
     executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || chromium.executablePath(),
@@ -54,10 +55,13 @@ async function main() {
   assert.equal(await page.locator('.guided-app').count(), 1);
   assert.equal(await page.locator('.guided-step').count(), 6);
   assert.equal(await page.locator('.stage-nav').count(), 0);
-  assert.match(await page.locator('h1').innerText(), /오늘 무엇을 판단/);
-  assert.match(await page.locator('#app-main').innerText(), /사업 도입지가 아니라.*현장조사 대상/);
+  assert.match(await page.locator('h1').innerText(), /돌봄이 필요한 곳, 이동부터 확인/);
+  assert.match(await page.locator('#app-main').innerText(), /문제[\s\S]*분석[\s\S]*행동/);
+  assert.match(await page.locator('#app-main').innerText(), /의료 접근성 대리진단/);
+  assert.match(await page.locator('#app-main').innerText(), /실제 고양온돌 대상자 위치와 62개 서비스 제공 위치는 사용하지 않았습니다/);
   assert.equal(await page.locator('[data-guided-field="selectedCode"]').inputValue(), '4128160000');
   assertNoOverflow(page, '안내 1단계 1440px');
+  await page.screenshot({ path: path.join(root, 'screenshots', '14_관산동_안내흐름_1단계.png'), fullPage: true });
 
   await goNext(page);
   assert.match(page.url(), /step=2/);
@@ -81,6 +85,7 @@ async function main() {
   assert.match(signals, /0\.83km/);
   assert.match(signals, /1\.31km/);
   assert.match(await page.locator('#app-main').innerText(), /공개 공급 신호도 양호/);
+  await page.screenshot({ path: path.join(root, 'screenshots', '15_관산동_안내흐름_2단계.png'), fullPage: true });
 
   await goNext(page);
   const confidence = await page.locator('#app-main').innerText();
@@ -89,12 +94,25 @@ async function main() {
   assert.match(confidence, /3\/8 교체/);
   assert.match(confidence, /선정확률이 아닙니다/);
   assert.match(confidence, /고양동\s*·\s*관산동\s*·\s*행주동/);
+  const accessScenario = await page.locator('.guided-access-scenario').innerText();
+  assert.match(accessScenario, /가정 시나리오.*실제 정책효과 아님/);
+  assert.match(accessScenario, /88\.5%\s*→\s*99\.6%~100\.0%/);
+  assert.match(accessScenario, /16\.2분\s*→\s*14\.1~24\.1분/);
+  assert.match(accessScenario, /7\.2분/);
+  assert.match(accessScenario, /실제 대기.*OD 로그/);
+  await page.screenshot({ path: path.join(root, 'screenshots', '16_관산동_안내흐름_3단계.png'), fullPage: true });
 
   await goNext(page);
   assert.equal(await page.locator('.guided-check-row input[type="checkbox"]').count(), 6);
   assert.match(await page.locator('.guided-village-screen').innerText(), /127\/129/);
   assert.match(await page.locator('.guided-village-screen').innerText(), /8개/);
   assert.match(await page.locator('.guided-village-screen').innerText(), /배차.*증명하지 않습니다/);
+  assert.match(await page.locator('.guided-welfare-screen').innerText(), /관산동 경로당[\s\S]*16곳/);
+  assert.match(await page.locator('.guided-welfare-screen').innerText(), /593건\s*\/\s*594행/);
+  assert.match(await page.locator('.guided-welfare-screen').innerText(), /좌표 확보[\s\S]*0건/);
+  assert.equal(await page.locator('.guided-data-acquisition li').count(), 4);
+  assert.match(await page.locator('.guided-data-acquisition').innerText(), /확보[\s\S]*목록 확보[\s\S]*API 필요[\s\S]*기관 협조/);
+  await page.screenshot({ path: path.join(root, 'screenshots', '17_관산동_안내흐름_4단계.png'), fullPage: true });
   assert.equal(await page.locator('.guided-check-row input[type="checkbox"]:checked').count(), 0);
   // 구석 토스트를 폐기하고, 사용자의 시선이 있는 자리에 상시 오류 슬롯을 둔다.
   // 화면을 다시 그리지 않으므로 방금 누른 버튼의 포커스가 유지되어야 한다.
@@ -142,6 +160,13 @@ async function main() {
   assert.equal(payload.area.dong, '관산동');
   assert.equal(payload.dataRequests.length, 6);
   assert.equal(payload.evidenceSnapshot.villageBusStaticPresence.servingStops, 127);
+  assert.equal(payload.evidenceSnapshot.accessibilityScenario.status, 'hypothetical_scenario_not_observed_before_after');
+  assert.equal(payload.evidenceSnapshot.accessibilityScenario.referenceCoverage30, 0.8849230769230769);
+  assert.match(payload.evidenceSnapshot.accessibilityScenario.limitation, /실제 DRT 효과/);
+  assert.equal(payload.evidenceSnapshot.welfareDestination.selectedDongCount, 16);
+  assert.equal(payload.evidenceSnapshot.welfareDestination.currentWebDisplayedTotal, 593);
+  assert.equal(payload.evidenceSnapshot.welfareDestination.workbookRecordCount, 594);
+  assert.equal(payload.evidenceSnapshot.welfareDestination.coordinateCount, 0);
   assert.equal(payload.fieldChecks.length, 6);
   assert.equal(payload.fieldChecks.filter((item) => item.checked).length, 2);
   assert.equal(payload.alternativeQuestions.length, 5);

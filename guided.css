@@ -838,6 +838,92 @@
 
 .guided-village-screen b { margin-right: 8px; color: var(--guided-teal); }
 
+.guided-welfare-screen {
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 12px 0 0;
+  border: 1px solid var(--guided-line);
+  background: var(--guided-line);
+}
+
+.guided-welfare-screen > div {
+  display: grid;
+  gap: 5px;
+  padding: 16px 18px;
+  background: #fff;
+}
+
+.guided-welfare-screen span { color: var(--guided-muted); font-size: 12px; }
+.guided-welfare-screen strong { color: var(--guided-navy); font-size: 22px; }
+.guided-welfare-screen p {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 13px 18px;
+  color: var(--guided-ink);
+  background: #f4f7fb;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.guided-welfare-screen b { margin-right: 8px; color: var(--guided-teal); }
+
+.guided-access-scenario,
+.guided-data-acquisition {
+  max-width: 900px;
+  margin: 24px 0;
+  padding: 20px;
+  border: 1px solid var(--guided-line);
+  background: #fff;
+}
+
+.guided-access-scenario-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.guided-access-scenario-heading div { display: grid; gap: 4px; }
+.guided-access-scenario-heading strong { color: var(--guided-navy); font-size: 18px; }
+.guided-access-scenario-heading span,
+.guided-access-scenario-heading p { color: var(--guided-muted); font-size: 12px; }
+.guided-access-scenario-heading p { margin: 0; }
+
+.guided-access-scenario-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 18px 0;
+  background: var(--guided-line);
+}
+
+.guided-access-scenario-metrics > div {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  background: #f8fbfb;
+}
+
+.guided-access-scenario-metrics dt,
+.guided-access-scenario-metrics small { color: var(--guided-muted); font-size: 11px; }
+.guided-access-scenario-metrics dd { margin: 0; color: var(--guided-navy); font-weight: 800; }
+.guided-access-scenario > p { margin: 0; color: var(--guided-ink); font-size: 13px; }
+
+.guided-data-acquisition h2 { margin: 0 0 12px; color: var(--guided-navy); font-size: 17px; }
+.guided-data-acquisition ul { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.guided-data-acquisition li {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 14px;
+  padding: 12px 0;
+  border-top: 1px solid var(--guided-line);
+}
+.guided-data-acquisition li > span { color: var(--guided-teal); font-size: 12px; font-weight: 800; }
+.guided-data-acquisition p { display: grid; gap: 3px; margin: 0; }
+.guided-data-acquisition strong { color: var(--guided-navy); font-size: 14px; }
+.guided-data-acquisition small { color: var(--guided-muted); font-size: 12px; line-height: 1.5; }
+
 .guided-check-fieldset {
   max-width: 900px;
   margin: 34px 0 28px;
@@ -1380,11 +1466,16 @@
   }
 
   .guided-analysis-detail dl,
-  .guided-village-screen {
+  .guided-village-screen,
+  .guided-welfare-screen,
+  .guided-access-scenario-metrics {
     grid-template-columns: 1fr;
   }
 
-  .guided-village-screen p { grid-column: 1; }
+  .guided-access-scenario-heading { display: grid; }
+
+  .guided-village-screen p,
+  .guided-welfare-screen p { grid-column: 1; }
 
   .guided-detail-link {
     font-size: 13px;
@@ -1736,12 +1827,12 @@
   color: var(--guided-cobalt-dark); font-weight: 800; cursor: pointer;
 }
 
-/* --- 확대 시 CTA가 화면 밖으로 밀리는 구조 해소 --- */
+/* --- 긴 근거·체크리스트 위를 CTA가 가리지 않도록 문서 흐름에 배치 --- */
 .guided-app .guided-page { min-height: 0; }
 .guided-app .guided-action-bar {
-  position: sticky; bottom: 0;
+  position: static; bottom: auto;
   margin-top: 28px; padding: 14px 0;
-  background: linear-gradient(to top, #fff 72%, rgba(255,255,255,0));
+  background: #fff;
 }
 
 @media (prefers-reduced-motion: reduce) {

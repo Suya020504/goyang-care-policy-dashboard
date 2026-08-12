@@ -171,10 +171,10 @@
     const candidateCount = display(model.candidateCount, '8');
     return `
       <section class="guided-page guided-page-intro" aria-labelledby="guided-title">
-        ${eyebrow(1, '판단 범위를 먼저 고정합니다')}
+        ${eyebrow(1, '이 서비스가 하는 일을 먼저 설명합니다')}
         ${renderFallbackNotice(model, area)}
-        <h1 id="guided-title">오늘 무엇을 판단할까요?</h1>
-        <p class="guided-lead"><strong>${esc(area.dong)}</strong>을 사업 도입지가 아니라 <strong>현장조사 대상</strong>으로 올릴지 검토합니다.</p>
+        <h1 id="guided-title">돌봄이 필요한 곳, 이동부터 확인합니다.</h1>
+        <p class="guided-lead">고령 수요·의료시설 거리·버스 공급을 함께 보고, 정책을 확정하기 전에 <strong>어디부터 현장조사할지</strong> 정합니다.</p>
 
         <div class="guided-funnel" aria-label="검토 범위: 고양시 행정동, 제출 후보, ${esc(area.dong)} 순서">
           <div class="guided-funnel-node"><span>전체 범위</span><strong>고양시 ${esc(areaCount)}개 동</strong></div>
@@ -185,12 +185,15 @@
         </div>
 
         <div class="guided-scope-lines">
-          <div><span class="guided-scope-icon is-do" aria-hidden="true">i</span><p><strong>이번 흐름이 하는 일</strong><span>왜 먼저 조사할지, 무엇을 확인할지 순서대로 설명합니다.</span></p></div>
-          <div><span class="guided-scope-icon is-not" aria-hidden="true">×</span><p><strong>이번 흐름이 하지 않는 일</strong><span>DRT 도입지·예산·정책 효과를 확정하지 않습니다.</span></p></div>
+          <div><span class="guided-scope-icon is-do" aria-hidden="true">1</span><p><strong>문제</strong><span>돌봄 수요와 실제 이동 가능성은 서로 다른 자료로 관리됩니다.</span></p></div>
+          <div><span class="guided-scope-icon is-do" aria-hidden="true">2</span><p><strong>분석</strong><span>고양시 44개 동의 인구·의료·버스 공개데이터를 같은 지역 단위로 비교합니다.</span></p></div>
+          <div><span class="guided-scope-icon is-do" aria-hidden="true">3</span><p><strong>행동</strong><span>자동 도입 추천 대신 자료요청과 현장조사 체크리스트를 남깁니다.</span></p></div>
         </div>
 
+        <p class="guided-boundary-note">현재는 병·의원·약국까지의 <strong>의료 접근성 대리진단</strong>입니다. 실제 고양온돌 대상자 위치와 62개 서비스 제공 위치는 사용하지 않았습니다.</p>
+
         ${renderAreaSelect(model, state, area)}
-        ${actionBar({ step: 2, label: `${area.dong} 판단 시작` })}
+        ${actionBar({ step: 2, label: `${area.dong} 사례로 시작` })}
       </section>`;
   }
 
@@ -309,9 +312,40 @@
           <div><span class="guided-certainty-icon is-open" aria-hidden="true">−</span><p><strong>확정되지 않은 것</strong><span>${esc(model.unconfirmedText || 'DSS 값·내부순위·DRT 효과는 재현되지 않았습니다.')}</span></p></div>
         </div>
 
+        ${renderAccessibilityScenario(model, area)}
+
         ${renderProfessionalAnalysis(model, area)}
         ${actionBar({ previousStep: 2, step: 4, label: '다음: 공개데이터가 모르는 것은?' })}
       </section>`;
+  }
+
+  function signedMinutes(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return '자료 연결 대기';
+    return `${number > 0 ? '+' : ''}${number.toFixed(1)}분`;
+  }
+
+  function percentFromRatio(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? `${(number * 100).toFixed(1)}%` : '자료 연결 대기';
+  }
+
+  function renderAccessibilityScenario(model, area) {
+    const scenario = model.accessibilityScenario;
+    if (!scenario) return '';
+    return `
+      <aside class="guided-access-scenario" aria-label="${esc(area.dong)} 이동시간 가정 시나리오">
+        <div class="guided-access-scenario-heading">
+          <div><strong>대기시간을 모르면 개선 여부도 달라집니다.</strong><span>가정 시나리오 · 실제 정책효과 아님</span></div>
+          <p>대기 ${esc(asList(scenario.waitScenarioMinutes, [5, 10, 15]).join('·'))}분을 각각 넣어 범위로 확인했습니다.</p>
+        </div>
+        <dl class="guided-access-scenario-metrics">
+          <div><dt>30분 면적 커버리지</dt><dd>${esc(percentFromRatio(scenario.referenceCoverage30))} → ${esc(percentFromRatio(scenario.scenarioCoverage30Low))}~${esc(percentFromRatio(scenario.scenarioCoverage30High))}</dd><small>사람 비율이 아니라 100m 면적격자 비율</small></div>
+          <div><dt>중앙 일반화시간</dt><dd>${esc(fixedOrPending(scenario.referenceMedianMinutes, 1))}분 → ${esc(fixedOrPending(scenario.scenarioMedianMinutesLow, 1))}~${esc(fixedOrPending(scenario.scenarioMedianMinutesHigh, 1))}분</dd><small>기준 대비 ${esc(signedMinutes(scenario.medianTimeChangeMinutesLow))}~${esc(signedMinutes(scenario.medianTimeChangeMinutesHigh))}</small></div>
+          <div><dt>중앙격자 손익분기 대기</dt><dd>${esc(fixedOrPending(scenario.breakEvenWaitMedianMinutes, 1))}분</dd><small>이보다 길면 중앙시간 개선을 보장할 수 없음</small></div>
+        </dl>
+        <p>따라서 실제 대기·승하차·OD 로그를 확보하기 전에는 “DRT로 개선된다”고 결론내리지 않습니다.</p>
+      </aside>`;
   }
 
   function fixedOrPending(value, digits = 2) {
@@ -400,6 +434,10 @@
 
         ${renderVillageBusScreening(model, area)}
 
+        ${renderWelfareDestinationSnapshot(model, area)}
+
+        ${renderDataAcquisition(model)}
+
         <fieldset class="guided-check-fieldset">
           <legend class="guided-visually-hidden">현장조사 확인 항목</legend>
           ${items.map((item) => renderFieldCheck(item, state)).join('')}
@@ -408,6 +446,28 @@
         <p class="guided-boundary-note">개인 위치·실제 이동경로·정책 효과는 이 화면에 포함하지 않습니다.</p>
         ${actionBar({ previousStep: 3, step: 5, label: '다음: 어떤 대안을 가를까요?' })}
       </section>`;
+  }
+
+  function renderDataAcquisition(model) {
+    const rows = asList(model.dataAcquisition);
+    if (!rows.length) return '';
+    return `
+      <section class="guided-data-acquisition" aria-labelledby="guided-data-acquisition-title">
+        <h2 id="guided-data-acquisition-title">자료 준비 상태</h2>
+        <ul>${rows.map((row) => `<li><span>${esc(row.status)}</span><p><strong>${esc(row.label)}</strong><small>${esc(row.detail)}</small></p></li>`).join('')}</ul>
+      </section>`;
+  }
+
+  function renderWelfareDestinationSnapshot(model, area) {
+    const snapshot = model.welfareDestinationSnapshot;
+    if (!snapshot) return '';
+    return `
+      <aside class="guided-welfare-screen" aria-label="${esc(area.dong)} 복지 목적지 목록 준비 상태">
+        <div><span>${esc(area.dong)} 경로당</span><strong>${esc(snapshot.selectedDongCount)}곳</strong></div>
+        <div><span>현재 웹 / 2026-06 Excel</span><strong>${esc(snapshot.currentWebDisplayedTotal)}건 / ${esc(snapshot.workbookRecordCount)}행</strong></div>
+        <div><span>좌표 확보</span><strong>${esc(snapshot.coordinateCount)}건</strong></div>
+        <p><b>해석</b>${esc(snapshot.interpretation)}</p>
+      </aside>`;
   }
 
   function renderVillageBusScreening(model, area) {

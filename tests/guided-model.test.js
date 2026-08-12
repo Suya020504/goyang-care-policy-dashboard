@@ -7,6 +7,7 @@ const vm = require('node:vm');
 const MODEL_PATH = path.join(__dirname, '..', 'src', 'guided-model.js');
 const DATA_PATH = path.join(__dirname, '..', 'public', 'data', 'data.js');
 const PRO_PATH = path.join(__dirname, '..', 'public', 'data', 'pro_analysis.js');
+const WELFARE_PATH = path.join(__dirname, '..', 'public', 'data', 'welfare_destinations.js');
 
 function loadBrowserGlobal(filePath, globalName) {
   const sandbox = { window: {} };
@@ -21,9 +22,11 @@ function loadData() {
   vm.createContext(sandbox);
   vm.runInContext(fs.readFileSync(DATA_PATH, 'utf8'), sandbox, { filename: DATA_PATH });
   vm.runInContext(fs.readFileSync(PRO_PATH, 'utf8'), sandbox, { filename: PRO_PATH });
+  vm.runInContext(fs.readFileSync(WELFARE_PATH, 'utf8'), sandbox, { filename: WELFARE_PATH });
   return {
     data: JSON.parse(JSON.stringify(sandbox.window.DDOL_V2_DATA)),
     pro: JSON.parse(JSON.stringify(sandbox.window.DDOL_PRO_ANALYSIS)),
+    welfare: JSON.parse(JSON.stringify(sandbox.window.DDOL_WELFARE_DESTINATIONS)),
   };
 }
 
@@ -35,7 +38,7 @@ const {
   buildAreaModel,
   buildChecklistExport,
 } = require('../src/guided-model.js');
-const { data, pro } = loadData();
+const { data, pro, welfare } = loadData();
 
 test('classic script와 CommonJS에서 동일한 6단계 API를 제공한다', () => {
   const browserApi = loadBrowserGlobal(MODEL_PATH, 'DDOL_GUIDED_MODEL');
@@ -53,7 +56,7 @@ test('classic script와 CommonJS에서 동일한 6단계 API를 제공한다', (
 });
 
 test('기본 관산동은 상충 신호와 피드백 재분석을 함께 계산한다', () => {
-  const model = buildAreaModel(data, pro, DEFAULT_DONG_CODE);
+  const model = buildAreaModel(data, pro, DEFAULT_DONG_CODE, welfare);
   assert.deepEqual(model.selectedArea, {
     code: '4128160000',
     district: '고양시 덕양구',
@@ -85,6 +88,20 @@ test('기본 관산동은 상충 신호와 피드백 재분석을 함께 계산�
   assert.equal(model.villageBusSnapshot.servingStopCount, 127);
   assert.equal(model.villageBusSnapshot.allStopCount, 129);
   assert.equal(model.villageBusSnapshot.uniqueRouteCount, 8);
+  assert.equal(model.accessibilityScenario.status, 'hypothetical_scenario_not_observed_before_after');
+  assert.equal(model.accessibilityScenario.referenceMedianMinutes, 16.2342144479973);
+  assert.equal(model.accessibilityScenario.scenarioMedianMinutesLow, 14.052059926220126);
+  assert.equal(model.accessibilityScenario.scenarioMedianMinutesHigh, 24.052059926220124);
+  assert.equal(model.accessibilityScenario.referenceCoverage30, 0.8849230769230769);
+  assert.equal(model.accessibilityScenario.scenarioCoverage30Low, 0.9956923076923077);
+  assert.equal(model.accessibilityScenario.scenarioCoverage30High, 1);
+  assert.equal(model.accessibilityScenario.breakEvenWaitMedianMinutes, 7.182154521777173);
+  assert.deepEqual(model.accessibilityScenario.waitScenarioMinutes, [5, 10, 15]);
+  assert.deepEqual(model.dataAcquisition.map((item) => item.status), ['확보', '목록 확보', 'API 필요', '기관 협조']);
+  assert.equal(model.welfareDestinationSnapshot.selectedDongCount, 16);
+  assert.equal(model.welfareDestinationSnapshot.currentWebDisplayedTotal, 593);
+  assert.equal(model.welfareDestinationSnapshot.workbookRecordCount, 594);
+  assert.equal(model.welfareDestinationSnapshot.coordinateCount, 0);
   assert.equal(model.candidateSet.display, '8/8');
   assert.equal(model.candidateSet.isReproduced, true);
   assert.equal(model.robustness.bounded.display, '45/45');
@@ -106,7 +123,7 @@ test('다른 후보의 값도 선택한 행과 민감도 행에서 가져오며 
   changed.routesPerStop = 1.234;
   changed.nearestFacilityM = 987.65;
 
-  const model = buildAreaModel(clonedData, clonedPro, other.code);
+  const model = buildAreaModel(clonedData, clonedPro, other.code, welfare);
   const bounded = clonedPro.weightSensitivity.inclusionRows.find((row) => row.code === other.code);
   const boundary = clonedPro.weightSensitivity.boundaryAudit.inclusionRows.find((row) => row.code === other.code);
   assert.equal(model.selectedArea.code, other.code);
@@ -115,13 +132,13 @@ test('다른 후보의 값도 선택한 행과 민감도 행에서 가져오며 
   assert.equal(model.robustness.boundary.display, `${boundary.count}/${clonedPro.weightSensitivity.boundaryAudit.scenarioCount}`);
 
   const nonCandidate = data.areas.find((area) => !area.candidate);
-  const fallback = buildAreaModel(data, pro, nonCandidate.code);
+  const fallback = buildAreaModel(data, pro, nonCandidate.code, welfare);
   assert.equal(fallback.selectedArea.code, DEFAULT_DONG_CODE);
   assert.equal(fallback.usedFallback, true);
 });
 
 test('알 수 없는 코드도 관산동으로 안전하게 복구한다', () => {
-  const model = buildAreaModel(data, pro, 'not-a-candidate');
+  const model = buildAreaModel(data, pro, 'not-a-candidate', welfare);
   assert.equal(model.selectedArea.code, DEFAULT_DONG_CODE);
   assert.equal(model.selectedArea.dong, '관산동');
   assert.equal(model.usedFallback, true);
@@ -138,7 +155,7 @@ test('현장확인 체크리스트는 6개이며 알려진 항목만 저장한�
     '앱·전화·승하차·동행지원 접근성',
     '대안별 운영자원·비용과 방문서비스 대체성',
   ]);
-  const model = buildAreaModel(data, pro, DEFAULT_DONG_CODE);
+  const model = buildAreaModel(data, pro, DEFAULT_DONG_CODE, welfare);
   const result = buildChecklistExport({
     model,
     selectedChecks: [CHECKLIST_ITEMS[0].id, { id: CHECKLIST_ITEMS[3].id }, 'unknown-check'],
@@ -157,7 +174,7 @@ test('현장확인 체크리스트는 6개이며 알려진 항목만 저장한�
 });
 
 test('저장 결과는 현장조사 범위와 사람 검토를 명시하고 개인정보·OD·정책추천 필드를 만들지 않는다', () => {
-  const model = buildAreaModel(data, pro, DEFAULT_DONG_CODE);
+  const model = buildAreaModel(data, pro, DEFAULT_DONG_CODE, welfare);
   const result = buildChecklistExport({
     model,
     selectedChecks: CHECKLIST_ITEMS.map((item) => item.id),
@@ -173,6 +190,11 @@ test('저장 결과는 현장조사 범위와 사람 검토를 명시하고 개�
   assert.equal(result.evidenceSnapshot.busFacilitySpearmanRho, 0.93107822410148);
   assert.equal(result.evidenceSnapshot.singleComponentRemovalReplacementCount, 3);
   assert.equal(result.evidenceSnapshot.villageBusStaticPresence.servingStops, 127);
+  assert.equal(result.evidenceSnapshot.accessibilityScenario.status, 'hypothetical_scenario_not_observed_before_after');
+  assert.equal(result.evidenceSnapshot.accessibilityScenario.referenceCoverage30, 0.8849230769230769);
+  assert.equal(result.evidenceSnapshot.accessibilityScenario.scenarioCoverage30Low, 0.9956923076923077);
+  assert.equal(result.evidenceSnapshot.accessibilityScenario.scenarioCoverage30High, 1);
+  assert.match(result.evidenceSnapshot.accessibilityScenario.limitation, /실제 DRT 효과.*아닙니다/);
   assert.equal(result.savedAt, '2026-08-10T12:34:56.000Z');
   assert.equal(result.decisionScope, '현장조사 우선검토');
   assert.equal(result.decisionNotice, '정책 도입 확정 아님');

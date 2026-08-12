@@ -1227,3 +1227,96 @@ summary:focus-visible {
   .card { break-inside: avoid; box-shadow: none; }
   .claim-list { max-height: none; overflow: visible; }
 }
+.access-time-range-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 0 0 16px;
+  color: var(--muted, #64748b);
+  font-size: 12px;
+}
+
+.access-time-range-legend span::before {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 4px;
+  margin-right: 7px;
+  vertical-align: middle;
+  background: #0f766e;
+}
+
+.access-time-range-legend .is-reference::before {
+  width: 3px;
+  height: 14px;
+  background: #e11d48;
+}
+
+.access-time-range-chart { display: grid; gap: 10px; }
+
+.access-time-range-row {
+  display: grid;
+  grid-template-columns: 70px minmax(180px, 1fr) 170px 120px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+}
+
+.access-time-range-row.is-selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.map-active-metric {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid #dce4ee;
+  background: #f7fafc;
+}
+.map-active-metric span,
+.map-active-metric small { color: #65748b; font-size: 11px; }
+.map-active-metric strong { color: #09214a; font-size: 20px; }
+
+.access-time-range-row > strong { color: #0f172a; }
+.access-time-range-row > b { color: #0f172a; font-size: 13px; }
+.access-time-range-row > small { color: #64748b; font-size: 11px; }
+
+.access-time-range-track {
+  position: relative;
+  height: 18px;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.access-time-range-track > span {
+  position: absolute;
+  top: 5px;
+  left: var(--left);
+  width: var(--width);
+  height: 8px;
+  border-radius: 999px;
+  background: #0f766e;
+}
+
+.access-time-range-track > i {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  left: var(--left);
+  width: 3px;
+  transform: translateX(-1px);
+  background: #e11d48;
+}
+
+@media (max-width: 720px) {
+  .access-time-range-row {
+    grid-template-columns: 64px minmax(100px, 1fr);
+  }
+
+  .access-time-range-row > b,
+  .access-time-range-row > small {
+    grid-column: 2;
+  }
+}

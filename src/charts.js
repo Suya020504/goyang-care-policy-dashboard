@@ -155,6 +155,14 @@
         high: '#d9483b',
         direction: '멀수록 진한 빨강',
       },
+      seniorCenterCount: {
+        label: '공식 Excel 경로당 수',
+        value: (area) => numeric(area.seniorCenterCount),
+        format: (value) => `${Math.round(value)}곳`,
+        low: '#edf4f8',
+        high: '#0b7774',
+        direction: '많을수록 진한 청록 · 접근성 아님',
+      },
       candidate: {
         label: '후보 8개 집합',
         value: (area) => area.candidate ? 1 : 0,
@@ -164,12 +172,12 @@
         direction: '파랑은 후보 8개 집합',
       },
       currentDrt: {
-        label: '현행 DRT 비교 행정동',
+        label: '과거 팀 사후 대리매핑 행정동',
         value: (area) => area.currentDrt ? 1 : 0,
-        format: (value) => value ? '현행 비교 동' : '비교 동 매핑 없음',
+        format: (value) => value ? '과거 팀 사후 대리매핑 동' : '대리매핑 없음',
         low: '#edf1f6',
         high: '#058b87',
-        direction: '청록은 4개 운영권역을 매핑한 3개 동',
+        direction: '청록은 과거 팀이 사후 매핑한 3개 동',
       },
     };
     const definition = definitions[metric] || definitions.agingRate;
@@ -279,7 +287,7 @@
       showBus ? '<span><i class="legend-dot bus"></i>전체 레이어 정류장 2,095</span>' : '',
       showFacilities ? '<span><i class="legend-dot medical"></i>전체 레이어 병·의원 등 1,397</span><span><i class="legend-dot pharmacy"></i>약국 495</span>' : '',
       '<span><i class="legend-dot candidate"></i>후보 8개 동 표식</span>',
-      '<span><i class="legend-dot drt"></i>현행 비교 3동 표식</span>',
+      '<span><i class="legend-dot drt"></i>과거 팀 사후 대리매핑 3동</span>',
     ].filter(Boolean).join('');
     const displayClipPaths = visibleRows.map(({ feature }) => `<path d="${escapeHtml(feature.path)}" fill-rule="evenodd" />`).join('');
 
@@ -498,7 +506,7 @@
       return `
         <div class="model-row">
           <strong>${escapeHtml(labels[model] || model)}</strong>
-          <div class="model-metric"><span>현행 3동 중 포착</span><i style="--value:${precision * 100}%"></i><b>${Math.round(precision * 3)}/3</b></div>
+          <div class="model-metric"><span>과거 팀 대리매핑 3동과 겹침</span><i style="--value:${precision * 100}%"></i><b>${Math.round(precision * 3)}/3</b></div>
           <div class="model-metric"><span>포스터 후보집합</span><i style="--value:${jaccard * 100}%"></i><b>${Math.round(jaccard * 100)}%</b></div>
           <small>Precision@3 ${precision.toFixed(2)} · Recall@3 ${recall.toFixed(2)}</small>
         </div>`;
@@ -588,7 +596,7 @@
     const height = 220;
     const gap = width / Math.max(1, distribution.length);
     return `
-      <svg class="overlap-null-chart" viewBox="0 0 710 310" role="img" aria-label="44개 동에서 3곳을 무작위로 고를 때 현행 3동과 겹치는 수의 정확분포. 관측 겹침은 ${numeric(data?.observedOverlap)}곳">
+      <svg class="overlap-null-chart" viewBox="0 0 710 310" role="img" aria-label="44개 동에서 3곳을 무작위로 고를 때 과거 팀 사후 대리매핑 3동과 겹치는 수의 정확분포. 관측 겹침은 ${numeric(data?.observedOverlap)}곳">
         <line x1="${x0}" y1="${y0 + height}" x2="${x0 + width}" y2="${y0 + height}" stroke="#9aa7b9" />
         ${distribution.map((item, index) => {
           const overlap = numeric(item.overlap ?? item.k);
@@ -598,7 +606,7 @@
           const observed = overlap === numeric(data?.observedOverlap);
           return `<g><rect x="${x}" y="${y0 + height - barHeight}" width="${gap * .6}" height="${barHeight}" rx="6" fill="${observed ? COLORS.blue : COLORS.gray}"/><text class="value-text" x="${x + gap * .3}" y="${y0 + height - barHeight - 8}" text-anchor="middle">${(probability * 100).toFixed(1)}%</text><text class="axis-text" x="${x + gap * .3}" y="${y0 + height + 24}" text-anchor="middle">${overlap}곳</text></g>`;
         }).join('')}
-        <text class="axis-title" x="${x0 + width / 2}" y="300" text-anchor="middle">무작위 후보 3곳과 현행 3동의 겹침 수</text>
+        <text class="axis-title" x="${x0 + width / 2}" y="300" text-anchor="middle">무작위 후보 3곳과 과거 팀 대리매핑 3동의 겹침 수</text>
       </svg>`;
   }
 

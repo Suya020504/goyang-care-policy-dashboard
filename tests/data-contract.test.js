@@ -184,8 +184,8 @@ test('도시 기준 합계와 DRT 시점 표기가 정확하다', () => {
       drtVehicleSnapshot: 14,
     },
   );
-  assert.equal(data.city.drtVehicleSnapshotDate, '2025-03-19');
-  assert.equal(data.city.drtVehicleCurrentStatus, 'needs-confirmation');
+  assert.equal(data.city.drtVehicleSnapshotDate, '2026-08-13');
+  assert.equal(data.city.drtVehicleCurrentStatus, 'official-live-list-verified');
   assert.ok(Math.abs(data.city.nearestFacilityMeanM - 1307.06340934404) < 1e-9);
   assert.equal(data.city.nearestFacilityAggregation, '100m 격자 26,595개 가중평균');
   assert.equal(data.areas.reduce((sum, area) => sum + area.population, 0), data.city.population);
@@ -268,8 +268,9 @@ test('모델 비교와 원자료 manifest를 완전하게 제공한다', () => {
 
 test('공식 맥락 5개가 정의·시점·출처 제한을 함께 보존한다', () => {
   assert.equal(data.officialContext.length, 5);
-  assert.equal(data.sources.length, 7);
+  assert.equal(data.sources.length, 8);
   const sourceIds = new Set(data.sources.map((source) => source.id));
+  assert.ok(sourceIds.has('SRC-GTRANS-DDOKBUS-20260813'));
   data.officialContext.forEach((card) => {
     assert.ok(card.sourceIds.every((sourceId) => sourceIds.has(sourceId)));
     assert.ok(card.sourceUrls.every((url) => url.startsWith('https://')));
@@ -297,11 +298,11 @@ test('공식 맥락 5개가 정의·시점·출처 제한을 함께 보존한다
   assert.match(expansion.caution, /모든 65세 미만 장애인을 뜻하지 않/);
 
   const ddokbus = data.officialContext.find((card) => card.id === 'ddokbus-operating-context');
-  assert.equal(ddokbus.value, '4개 운영권역 · 14대(2025-03-19 당시)');
+  assert.equal(ddokbus.value, '4개 운영권역 · 14대(2026-08-13 확인)');
   assert.deepEqual(ddokbus.metrics.serviceZones.names, ['식사', '고봉', '덕은', '향동']);
   assert.equal(ddokbus.metrics.vehicleSnapshot.value, 14);
-  assert.equal(ddokbus.metrics.vehicleSnapshot.asOf, '2025-03-19');
-  assert.equal(ddokbus.metrics.vehicleSnapshot.currentStatus, 'needs-confirmation');
+  assert.equal(ddokbus.metrics.vehicleSnapshot.asOf, '2026-08-13');
+  assert.equal(ddokbus.metrics.vehicleSnapshot.currentStatus, 'official-live-list-verified');
 });
 
 test('공개 GIS 경계는 분석 경계와 같고 44개 행정동에 1:1 연결된다', () => {
