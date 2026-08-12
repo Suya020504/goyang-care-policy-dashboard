@@ -33,9 +33,10 @@ async function assertNoOverflow(page, label) {
   assert.ok(width.scroll <= width.client, `${label} 가로 overflow: ${JSON.stringify(width)}`);
 }
 
-async function goNext(page) {
+async function goNext(page, { expectTop = true } = {}) {
   await page.locator('.guided-primary-action').click();
   await page.locator('#app-main').waitFor();
+  if (expectTop) await page.waitForFunction(() => window.scrollY === 0);
 }
 
 async function main() {
@@ -63,7 +64,10 @@ async function main() {
   assertNoOverflow(page, '안내 1단계 1440px');
   await page.screenshot({ path: path.join(root, 'screenshots', '14_관산동_안내흐름_1단계.png'), fullPage: true });
 
+  await page.evaluate(() => window.scrollTo(0, 500));
+  assert.ok(await page.evaluate(() => window.scrollY > 0));
   await goNext(page);
+  assert.equal(await page.evaluate(() => window.scrollY), 0);
   assert.match(page.url(), /step=2/);
   assert.match(await page.locator('h1').innerText(), /왜 관산동을 먼저 확인/);
   assert.equal(await page.locator('.guided-map-svg path').count(), 44);
@@ -117,7 +121,7 @@ async function main() {
   // 구석 토스트를 폐기하고, 사용자의 시선이 있는 자리에 상시 오류 슬롯을 둔다.
   // 화면을 다시 그리지 않으므로 방금 누른 버튼의 포커스가 유지되어야 한다.
   await page.locator('.guided-primary-action').focus();
-  await goNext(page);
+  await goNext(page, { expectTop: false });
   const slot = page.locator('.guided-error-slot');
   assert.match(await slot.innerText(), /한 개 이상 골라 주세요/);
   assert.ok(parseFloat(await slot.evaluate((n) => getComputedStyle(n).fontSize)) >= 18);

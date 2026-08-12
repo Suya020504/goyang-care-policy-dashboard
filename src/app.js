@@ -495,7 +495,12 @@
     }
     window.history[pushHistory ? 'pushState' : 'replaceState']({}, '', url);
     render();
-    if (focusMain) window.setTimeout(() => document.getElementById('app-main')?.focus(), 0);
+    if (focusMain) window.setTimeout(() => {
+      // 단계형 안내는 화면 전체를 교체한다. 이전 단계의 스크롤 위치를 남기면
+      // 새 질문의 제목과 설명이 잘리므로 항상 새 화면의 시작점으로 돌아간다.
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      document.getElementById('app-main')?.focus({ preventScroll: true });
+    }, 0);
   }
 
   function shell(content) {
